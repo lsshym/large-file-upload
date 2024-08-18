@@ -154,10 +154,10 @@ interface UploadOptions {
  * @param {UploadCallback} cb - 处理单个文件块上传的回调函数。
  * @returns {Promise<any>[]} 返回一个包含所有上传结果的 Promise 数组。
  */
-export async function uploadChunksWithPool(
+export function uploadChunksWithPool(
   { fileChunks, maxTasks = 4 }: UploadOptions,
   cb: UploadCallback
-): Promise<any[]> {
+): PromisePool {
   // 将 fileChunks 转换为异步任务的数组
   const tasks = fileChunks.map((item, index) => {
     return async () => {
@@ -170,5 +170,5 @@ export async function uploadChunksWithPool(
   const pool = new PromisePool(tasks, maxTasks);
 
   // 返回任务池执行的结果
-  return pool.exec<any>();
+  return pool;
 }
