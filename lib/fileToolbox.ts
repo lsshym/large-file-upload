@@ -2,7 +2,6 @@ import { PromisePool } from "./PromisePool";
 
 type FileChunkResult = {
   fileChunks: Blob[];
-  chunksLength: number;
   chunkSize: number;
   error?: string; // 可选的错误信息
 };
@@ -16,7 +15,6 @@ type FileChunkResult = {
  *
  * @returns {FileChunkResult} 返回一个包含以下属性的对象：
  * - `fileChunks`: Blob 对象数组，每个 Blob 对象表示文件的一个块。
- * - `chunksLength`: 文件被分割的块数量。
  * - `CHUNK_SIZE`: 每个块的大小（以字节为单位）。
  */
 export async function currentFileChunks(
@@ -63,7 +61,7 @@ export async function currentFileChunks(
     currentChunk = endChunk;
   }
 
-  return { fileChunks, chunksLength: fileChunks.length, chunkSize: CHUNK_SIZE };
+  return { fileChunks, chunkSize: CHUNK_SIZE };
 }
 
 /**

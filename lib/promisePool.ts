@@ -21,7 +21,7 @@ export class PromisePool {
   private currentTaskIndex = 0;
 
   // 使用 Subject 来发布任务状态的变化，外部可以订阅这个状态流
-  public status$ = new Subject<{ currentTask: number; totalTasks: number }>();
+  public status$ = new Subject<{ currentTask: number; queue: any[] }>();
 
   /**
    * 构造函数初始化任务池
@@ -39,7 +39,7 @@ export class PromisePool {
     // 初始化任务状态的发布
     this.status$.next({
       currentTask: this.currentTaskIndex,
-      totalTasks: this.queue.length,
+      queue: this.queue,
     });
   }
 
@@ -73,8 +73,7 @@ export class PromisePool {
             // 发布当前任务状态
             this.status$.next({
               currentTask: index, // 加1是因为索引从0开始，展示时更直观
-              totalTasks:
-                this.results.length + this.queue.length + tasksToRun.length,
+              queue: this.queue,
             });
 
             fn()
@@ -134,7 +133,7 @@ export class PromisePool {
    */
   clear() {
     this.queue.length = 0;
-    this.status$.next({ currentTask: 0, totalTasks: 0 });
+    this.status$.next({ currentTask: 0, queue: this.queue });
   }
 
   /**
@@ -150,7 +149,7 @@ export class PromisePool {
     // 发布更新后的任务状态
     this.status$.next({
       currentTask: this.currentTaskIndex,
-      totalTasks: this.results.length + this.queue.length,
+      queue: this.queue,
     });
 
     // 如果任务池已经开始并且未暂停，则立即触发任务调度

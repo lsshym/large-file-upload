@@ -21,7 +21,7 @@ app.options("*", (req, res) => {
   res.sendStatus(200);
 });
 
-app.listen(port, () => console.log("vue3完整版大文件上传：监听3030端口"));
+app.listen(port, () => console.log("大文件上传：监听3030端口"));
 
 // 大文件存储目录
 const UPLOAD_DIR = path.resolve(__dirname, "target");
@@ -39,9 +39,7 @@ app.post("/upload", async (req, res) => {
 
   // return
   // 把主线程卡主两秒再返回
-  // const delay = Math.floor(Math.random() * 2000) + 1000;
 
-  // sleep(delay);
 
   try {
     // 处理文件表单
