@@ -1,8 +1,5 @@
 {
   "compilerOptions": {
-    "declaration": true,
-    "emitDeclarationOnly": true,
-    "outDir": "./types",
     "target": "ES2020",
     "useDefineForClassFields": true,
     "module": "ESNext",
@@ -15,7 +12,10 @@
     "resolveJsonModule": true,
     "isolatedModules": true,
     "noEmit": false,
-
+    "declaration": true,
+    "emitDeclarationOnly": true,
+    "declarationDir": "dist",
+    
     /* Linting */
     "strict": true,
     "noUnusedLocals": true,

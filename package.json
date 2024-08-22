@@ -18,7 +18,7 @@
   },
   "scripts": {
     "dev": "vite",
-    "build": "tsc && vite build"
+    "build": "vite build && tsc -d"
   },
   "devDependencies": {
     "axios": "^1.7.4",
