@@ -1,17 +1,24 @@
 import { defineConfig } from "vite";
-import typescript2 from "rollup-plugin-typescript2";
+import dts from "vite-plugin-dts";
 
 export default defineConfig({
   build: {
     lib: {
       entry: "./lib/main.ts",
       name: "FileChunkTools", // 库的全局变量名称（用于 UMD/IIFE 构建）
-      fileName: 'file-chunk-tools', // 输出文件名，基于不同格式生成文件
+      fileName: "file-chunk-tools", // 输出文件名，基于不同格式生成文件
     },
   },
   plugins: [
-    typescript2({
-      tsconfig: "lib/tsconfig.json",
+    dts({
+      include: ["./lib/**/*"],
+      outDir: "./dist/types",
+      compilerOptions: {
+        declaration: true, // 启用声明文件生成
+        emitDeclarationOnly: true, // 只生成声明文件，不生成 .js 文件
+        esModuleInterop: true,
+        forceConsistentCasingInFileNames: true,
+      },
     }),
   ],
 });

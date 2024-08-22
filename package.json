@@ -10,9 +10,9 @@
   ],
   "main": "./dist/file-chunk-tools.umd.cjs",
   "module": "./dist/file-chunk-tools.js",
-  "types": "./dist/main.d.ts",
+  "types": "./dist/types/main.d.ts",
   "exports": {
-    "types": "./dist/lib/main.d.ts",
+    "types": "./dist/types/main.d.ts",
     "import": "./dist/file-chunk-tools.js",
     "require": "./dist/file-chunk-tools.umd.cjs"
   },
@@ -22,7 +22,6 @@
   },
   "devDependencies": {
     "axios": "^1.7.4",
-    "rollup-plugin-typescript2": "^0.36.0",
     "typescript": "^5.4.5",
     "vite": "^5.2.10",
     "vite-plugin-dts": "^4.0.3"
