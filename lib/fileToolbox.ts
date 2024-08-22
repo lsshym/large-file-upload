@@ -1,4 +1,4 @@
-import { PromisePool } from "./PromisePool";
+import { PromisePool } from "./promisePool";
 
 export type FileChunkResult = {
   fileChunks: Blob[];

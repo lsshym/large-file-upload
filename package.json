@@ -8,17 +8,17 @@
     "dist",
     "types"
   ],
-  "main": "./dist/counter.umd.cjs",
-  "module": "./dist/counter.js",
-  "types": "./types/lib/main.d.ts",
+  "main": "./dist/file-chunk-tools.umd.cjs",
+  "module": "./dist/file-chunk-tools.js",
+  "types": "./dist/main.d.ts",
   "exports": {
-    "types": "./types/lib/main.d.ts",
-    "import": "./dist/counter.js",
-    "require": "./dist/counter.umd.cjs"
+    "types": "./dist/lib/main.d.ts",
+    "import": "./dist/file-chunk-tools.js",
+    "require": "./dist/file-chunk-tools.umd.cjs"
   },
   "scripts": {
     "dev": "vite",
-    "build": "vite build && tsc -d"
+    "build": "vite build && tsc"
   },
   "devDependencies": {
     "axios": "^1.7.4",
