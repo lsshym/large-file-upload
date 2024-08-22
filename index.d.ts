@@ -1,13 +1,4 @@
-import {
-  currentFileChunks,
-  generateFileHashWithCrypto,
-  uploadChunksWithPool,
-} from "./lib/fileToolbox";
-import { PromisePool } from "./lib/PromisePool";
+// index.d.ts
 
-export {
-  currentFileChunks,
-  generateFileHashWithCrypto,
-  uploadChunksWithPool,
-  PromisePool,
-};
+export * from "./lib/fileToolbox";
+export * from "./lib/PromisePool";
