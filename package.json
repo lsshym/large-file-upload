@@ -6,13 +6,13 @@
   "type": "module",
   "files": [
     "dist",
-    "index.d.ts"
+    "types"
   ],
   "main": "./dist/counter.umd.cjs",
   "module": "./dist/counter.js",
-  "types": "./index.d.ts",
+  "types": "./types/lib/main.d.ts",
   "exports": {
-    "types": "./index.d.ts",
+    "types": "./types/lib/main.d.ts",
     "import": "./dist/counter.js",
     "require": "./dist/counter.umd.cjs"
   },
@@ -22,6 +22,7 @@
   },
   "devDependencies": {
     "axios": "^1.7.4",
+    "rollup-plugin-typescript2": "^0.36.0",
     "typescript": "^5.4.5",
     "vite": "^5.2.10",
     "vite-plugin-dts": "^4.0.3"

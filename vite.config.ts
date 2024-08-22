@@ -1,5 +1,6 @@
 import { defineConfig } from "vite";
 import dts from "vite-plugin-dts";
+import typescript2 from "rollup-plugin-typescript2";
 
 export default defineConfig({
   build: {
@@ -9,9 +10,5 @@ export default defineConfig({
       fileName: "counter",
     },
   },
-  plugins: [
-    dts({
-      tsconfigPath: "./tsconfig.json",
-    }),
-  ],
+  // plugins: [typescript2()],
 });
