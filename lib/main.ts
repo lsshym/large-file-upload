@@ -12,11 +12,3 @@ export {
   PromisePool,
 };
 
-const FileUploadTools = {
-  currentFileChunks,
-  generateFileHashWithCrypto,
-  uploadChunksWithPool,
-  PromisePool,
-};
-
-export default FileUploadTools;
