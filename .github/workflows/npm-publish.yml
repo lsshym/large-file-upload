@@ -6,7 +6,8 @@ name: Node.js Package
 on:
   push:
     tags:
-      - "v*.*.*"
+      - "v*.*.*" # 匹配 v1.0.0 等标准版本号
+      - "v*.*.*-*" # 匹配 v1.0.0-0、v1.0.4-beta 等预发布版本号
 jobs:
   build:
     runs-on: ubuntu-latest
