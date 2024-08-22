@@ -4,8 +4,9 @@
 name: Node.js Package
 
 on:
-  tags:
-    - "v*.*.*"
+  push:
+    tags:
+      - "v*.*.*" # 只在符合版本号格式的标签推送时触发
 
 jobs:
   build:
