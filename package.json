@@ -1,7 +1,7 @@
 {
   "name": "file-chunks-tools",
   "private": false,
-  "version": "0.0.7-2",
+  "version": "0.0.7-3",
   "description": "A library for handling file uploads with chunking, hashing, and concurrent upload management.",
   "type": "module",
   "files": [
