@@ -1,6 +1,6 @@
 import { PromisePool } from "./PromisePool";
 
-type FileChunkResult = {
+export type FileChunkResult = {
   fileChunks: Blob[];
   chunkSize: number;
   error?: string; // 可选的错误信息
@@ -123,7 +123,7 @@ export async function generateFileHashWithCrypto(
  * 表示需要上传的文件块。
  * 根据实际数据结构修改此类型。
  */
-type FileChunk = any;
+export type FileChunk = any;
 
 /**
  * 处理单个文件块上传的回调函数类型。
@@ -132,7 +132,7 @@ type FileChunk = any;
  * @param {number} index - 文件块在数组中的索引。
  * @returns {Promise<any>} 返回一个表示上传结果的 Promise。
  */
-type UploadCallback = (item: FileChunk, index: number) => Promise<any>;
+export type UploadCallback = (item: FileChunk, index: number) => Promise<any>;
 
 /**
  * 文件上传的选项配置。
@@ -140,7 +140,7 @@ type UploadCallback = (item: FileChunk, index: number) => Promise<any>;
  * @property {FileChunk[]} fileChunks - 需要上传的文件块数组。
  * @property {number} [maxTasks=4] - 最大并发上传任务数，默认为4。
  */
-interface UploadOptions {
+export interface UploadOptions {
   fileChunks: FileChunk[];
   maxTasks?: number;
 }
