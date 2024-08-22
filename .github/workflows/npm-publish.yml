@@ -6,8 +6,7 @@ name: Node.js Package
 on:
   push:
     tags:
-      - "v*.*.*" # 只在符合版本号格式的标签推送时触发
-
+      - "v*.*.*"
 jobs:
   build:
     runs-on: ubuntu-latest
