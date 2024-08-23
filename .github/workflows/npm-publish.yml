@@ -48,9 +48,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
+      - uses: npm/action-setup@v4
         with:
           node-version: 20
+          cache: "pnpm"
           registry-url: https://registry.npmjs.org/
       - run: pnpm install # 使用 pnpm 安装依赖
       - run: pnpm publish # 使用 pnpm 发布包
