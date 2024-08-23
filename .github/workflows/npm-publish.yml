@@ -29,6 +29,20 @@ jobs:
       - name: Install dependencies
         run: pnpm install
 
+  build:
+    needs: cache-and-install
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Use cached Node.js and pnpm
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: "pnpm"
+      - name: Build the package
+        run: pnpm build # 使用之前的 pnpm 进行打包
+
   publish-npm:
     needs: build
     runs-on: ubuntu-latest
