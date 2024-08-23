@@ -17,7 +17,8 @@
   },
   "scripts": {
     "dev": "vite",
-    "build": "vite build && tsc"
+    "build": "vite build && tsc",
+    "pt": "git push origin --tags"
   },
   "devDependencies": {
     "axios": "^1.7.4",
