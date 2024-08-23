@@ -16,20 +16,28 @@
 npm install file-chunks-tools
 ```
 
-## API文档
+## API 文档
 
 #### currentFileChunks
+
 将文件按指定大小分割成多个块。
+
 ```
 const { fileChunks, chunkSize } = await currentFileChunks(file);
 ```
+
 #### generateFileHashWithCrypto
-计算hash。
+
+计算 hash。
+
 ```
 const hashId = await generateFileHashWithCrypto(file);
 ```
+
 #### uploadChunksWithPool
-将切片文件数组添加到Promise控制池，控制最大并发数量，防止浏览器卡顿。
+
+将切片文件数组添加到 Promise 控制池，控制最大并发数量，防止浏览器卡顿。
+
 ```
 const pool = uploadChunksWithPool(
   { fileChunks },
@@ -59,4 +67,28 @@ pool.exec().then((values) => {
 });
 ```
 
+#### PromisePool 线程池
 
+可自行控制并发数量，可用于控制同时发起的请求数量。
+
+```
+  import { PromisePool } from "file-chunks-tools";
+  const tasks = Array.from({ length: 10 }, (_, index) => {
+    return async () => {
+
+    };
+  });
+  const pool = new PromisePool(tasks, maxTasks);
+  pool.exec().then((values) => {
+
+  });
+  pool.status$.subscribe((status) => {
+
+  });
+  <!-- 暂停 -->
+  pool.pause();
+  <!-- 继续 -->
+  pool.resume();
+  <!-- 清空 -->
+  pool.clear();
+```
