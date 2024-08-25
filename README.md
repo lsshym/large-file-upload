@@ -1,7 +1,6 @@
+# file-chunks-tools
 
-# FileChunkTools
-
-FileChunkTools is a TypeScript-based utility library designed to handle file chunking, hashing, and concurrent upload tasks using a promise pool. This library is useful for scenarios where large files need to be split into chunks for processing or uploading in parallel.
+file-chunks-tools is a TypeScript-based utility library designed to handle file chunking, hashing, and concurrent upload tasks using a promise pool. This library is useful for scenarios where large files need to be split into chunks for processing or uploading in parallel.
 
 ## Features
 
@@ -14,9 +13,7 @@ FileChunkTools is a TypeScript-based utility library designed to handle file chu
 To install this library, clone the repository and install dependencies using pnpm:
 
 ```bash
-git clone https://github.com/lsshym/FileChunkTools.git
-cd FileChunkTools
-pnpm install
+npm i file-chunks-tools
 ```
 
 ## Usage
@@ -26,10 +23,13 @@ Below are detailed descriptions of the functions available in the library and ho
 ### 1. `currentFileChunks(file: File, customChunkSize?: number): Promise<FileChunkResult>`
 
 #### Description
+
 Splits the given file into multiple chunks of the specified size. If `customChunkSize` is not provided, the function automatically determines the chunk size based on the file size.
 
 #### Parameters
+
 - `file`: The file to be split.
+
   - **Type**: `File`
   - **Required**: Yes
 
@@ -38,6 +38,7 @@ Splits the given file into multiple chunks of the specified size. If `customChun
   - **Required**: No
 
 #### Returns
+
 - **Type**: `Promise<FileChunkResult>`
 - **Description**: Returns an object with the following properties:
   - `fileChunks`: An array of `Blob` objects, each representing a chunk of the file.
@@ -45,21 +46,25 @@ Splits the given file into multiple chunks of the specified size. If `customChun
   - `error`: Optional error message.
 
 #### Example
+
 ```typescript
 const file = document.querySelector('input[type="file"]').files[0];
 const { fileChunks, chunkSize } = await currentFileChunks(file, 2);
 
-console.log('Chunk Size:', chunkSize);
-console.log('Number of Chunks:', fileChunks.length);
+console.log("Chunk Size:", chunkSize);
+console.log("Number of Chunks:", fileChunks.length);
 ```
 
 ### 2. `generateFileHashWithCrypto(file: File, extraParams?: Record<string, any>): Promise<string>`
 
 #### Description
+
 Generates a unique hash identifier for the file using Crypto, based on the file content and optional extra parameters. The return value is formatted in a UUID-like form (8-4-4-4-12).
 
 #### Parameters
+
 - `file`: The file object for which to generate the hash.
+
   - **Type**: `File`
   - **Required**: Yes
 
@@ -68,24 +73,29 @@ Generates a unique hash identifier for the file using Crypto, based on the file 
   - **Required**: No
 
 #### Returns
+
 - **Type**: `Promise<string>`
 - **Description**: Returns a Promise that resolves to the formatted hash value (in UUID form).
 
 #### Example
+
 ```typescript
 const file = document.querySelector('input[type="file"]').files[0];
-const hash = await generateFileHashWithCrypto(file, { userId: '12345' });
+const hash = await generateFileHashWithCrypto(file, { userId: "12345" });
 
-console.log('File Hash:', hash);
+console.log("File Hash:", hash);
 ```
 
 ### 3. `uploadChunksWithPool(options: UploadOptions, cb: UploadCallback): PromisePool`
 
 #### Description
+
 Controls the concurrent upload of file chunks using `PromisePool`.
 
 #### Parameters
+
 - `options`: Upload options, including the array of file chunks and the maximum number of concurrent tasks.
+
   - **Type**: `UploadOptions`
   - **Required**: Yes
   - **Properties**:
@@ -101,10 +111,12 @@ Controls the concurrent upload of file chunks using `PromisePool`.
   - **Required**: Yes
 
 #### Returns
+
 - **Type**: `PromisePool`
 - **Description**: Returns a `PromisePool` instance that manages the execution of the tasks.
 
 #### Example
+
 ```typescript
 const file = document.querySelector('input[type="file"]').files[0];
 const { fileChunks } = await currentFileChunks(file, 2);
@@ -124,15 +136,19 @@ pool.exec().then((results) => {
 ### 4. `PromisePool`
 
 #### Description
+
 A class that manages the concurrent execution of asynchronous tasks, allowing you to control the number of tasks running simultaneously.
 
 #### Constructor
+
 ```typescript
 constructor(functions: AsyncFunction[], maxConcurrentTasks: number)
 ```
 
 #### Parameters
+
 - `functions`: Array of asynchronous functions to be executed.
+
   - **Type**: `AsyncFunction[]`
   - **Required**: Yes
 
@@ -153,17 +169,18 @@ constructor(functions: AsyncFunction[], maxConcurrentTasks: number)
 - **`addTasks(newTasks: AsyncFunction[])`**: Adds new tasks to the queue.
 
 #### Example
+
 ```typescript
 const tasks = [
-  () => new Promise((resolve) => setTimeout(() => resolve('Task 1'), 1000)),
-  () => new Promise((resolve) => setTimeout(() => resolve('Task 2'), 2000)),
-  () => new Promise((resolve) => setTimeout(() => resolve('Task 3'), 1500)),
+  () => new Promise((resolve) => setTimeout(() => resolve("Task 1"), 1000)),
+  () => new Promise((resolve) => setTimeout(() => resolve("Task 2"), 2000)),
+  () => new Promise((resolve) => setTimeout(() => resolve("Task 3"), 1500)),
 ];
 
 const pool = new PromisePool(tasks, 2);
 
 pool.exec().then((results) => {
-  console.log('Results:', results);
+  console.log("Results:", results);
 });
 
 pool.pause();
