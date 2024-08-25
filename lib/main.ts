@@ -2,7 +2,7 @@ import {
   currentFileChunks,
   generateFileHashWithCrypto,
   uploadChunksWithPool,
-} from "./fileToolbox";
+} from "./fileTools";
 import { PromisePool } from "./promisePool";
 
 export {
