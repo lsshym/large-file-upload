@@ -1,26 +1,26 @@
 import { BehaviorSubject, Subscription, Subject } from "rxjs";
 
-// Define the type for asynchronous functions
+// 定义异步函数的类型
 type AsyncFunction = () => Promise<any>;
 
 export class PromisePool {
-  // Stores the queue of tasks to be executed, each containing the task function and its index in the results array
+  // 存储待执行任务的队列，每个任务包含任务函数及其在结果数组中的索引
   private readonly queue: { fn: AsyncFunction; index: number }[] = [];
-  // Maximum number of concurrent tasks
+  // 最大并发任务数
   private readonly maxConcurrentTasks: number;
-  // Stores the execution results of all tasks
+  // 存储所有任务的执行结果
   private results: any[] = [];
-  // Subscription object used to unsubscribe
+  // 用于取消订阅的 Subscription 对象
   private subscription: Subscription | null = null;
 
-  // The number of currently running tasks, using BehaviorSubject to implement the publish-subscribe pattern
+  // 当前正在运行的任务数，使用 BehaviorSubject 实现发布订阅模式
   private currentRunningCount = new BehaviorSubject(0);
-  // Flag to determine whether tasks are paused
+  // 标志任务是否暂停
   private isPaused = false;
-  // The index of the currently executing task
+  // 当前正在执行的任务索引
   private currentTaskIndex = 0;
 
-  // Using Subject to publish task status changes, which can be subscribed to externally
+  // 使用 Subject 来发布任务状态的变化，外部可以订阅
   public status$ = new Subject<{ currentTask: number; queue: any[] }>();
 
   /**
@@ -30,13 +30,13 @@ export class PromisePool {
    */
   constructor(
     functions: AsyncFunction[],
-    maxConcurrentTasks: number = navigator.hardwareConcurrency || 8
+    maxConcurrentTasks: number = navigator.hardwareConcurrency || 4
   ) {
-    // Initialize the task queue, mapping task functions to their corresponding index in the results array
+    // 初始化任务队列，将任务函数映射到其在结果数组中的索引
     this.queue = functions.map((fn, index) => ({ fn, index }));
     this.maxConcurrentTasks = maxConcurrentTasks;
 
-    // Initialize the task status publication
+    // 初始化任务状态发布
     this.status$.next({
       currentTask: this.currentTaskIndex,
       queue: this.queue,
@@ -49,44 +49,44 @@ export class PromisePool {
    */
   exec<T>(): Promise<T[]> {
     return new Promise<T[]>((resolve) => {
-      // Subscribe to the current running task count
-      // This is the core of the publish-subscribe pattern, where tasks are scheduled by subscribing to the changes in task count, automatically triggering the next task when one completes
+      // 订阅当前运行任务的数量
+      // 这是发布订阅模式的核心，通过订阅任务数量的变化进行任务调度，当一个任务完成时自动触发下一个任务
       this.subscription = this.currentRunningCount.subscribe((count) => {
-        // If the task pool has started, is not paused, the number of running tasks is less than the maximum concurrency, and there are tasks remaining in the queue
+        // 如果任务池已启动、未暂停、运行中的任务数少于最大并发数且队列中还有任务
         if (
           !this.isPaused &&
           count < this.maxConcurrentTasks &&
           this.queue.length > 0
         ) {
-          // Calculate the number of tasks that can be started
+          // 计算可以启动的任务数
           const availableSlots = this.maxConcurrentTasks - count;
-          // Extract tasks from the queue that can be executed
+          // 从队列中提取可以执行的任务
           const tasksToRun = this.queue.splice(0, availableSlots);
 
-          // Update the number of currently running tasks
+          // 更新当前运行中的任务数
           this.currentRunningCount.next(count + tasksToRun.length);
 
-          // Execute the extracted tasks
+          // 执行提取的任务
           tasksToRun.forEach(({ fn, index }) => {
-            // Update the current task index
+            // 更新当前任务索引
             this.currentTaskIndex = index;
-            // Publish the current task status
+            // 发布当前任务状态
             this.status$.next({
-              currentTask: index, // Add 1 because the index starts from 0, making it more intuitive when displayed
+              currentTask: index, // 加 1 因为索引从 0 开始，显示时更直观
               queue: this.queue,
             });
 
             fn()
               .then((result) => {
-                // On success, store the result
+                // 成功时，存储结果
                 this.results[index] = result;
               })
               .catch((error) => {
-                // On failure, store the error message
+                // 失败时，存储错误信息
                 this.results[index] = error;
               })
               .finally(() => {
-                // Whether the task succeeds or fails, decrease the number of running tasks
+                // 无论任务成功或失败，减少运行中的任务数
                 this.currentRunningCount.next(
                   this.currentRunningCount.value - 1
                 );
@@ -94,16 +94,16 @@ export class PromisePool {
           });
         }
 
-        // If all tasks are completed (no tasks running and the queue is empty)
+        // 如果所有任务都已完成（无任务在运行且队列为空）
         if (this.currentRunningCount.value === 0 && this.queue.length === 0) {
-          // Resolve the final results array
+          // 解析最终的结果数组
           resolve(this.results as T[]);
-          // Unsubscribe to clean up resources
+          // 取消订阅以清理资源
           this.unsubscribe();
         }
       });
 
-      // Immediately trigger the subscription to start the first batch of tasks
+      // 立即触发订阅以启动第一批任务
       this.currentRunningCount.next(this.currentRunningCount.value);
     });
   }
@@ -123,7 +123,7 @@ export class PromisePool {
   resume() {
     if (this.isPaused) {
       this.isPaused = false;
-      this.currentRunningCount.next(this.currentRunningCount.value); // Trigger task scheduling
+      this.currentRunningCount.next(this.currentRunningCount.value); // 触发任务调度
     }
   }
 
@@ -146,15 +146,15 @@ export class PromisePool {
       this.queue.push({ fn, index: startIndex + index });
     });
 
-    // Publish the updated task status
+    // 发布更新后的任务状态
     this.status$.next({
       currentTask: this.currentTaskIndex,
       queue: this.queue,
     });
 
-    // If the task pool has already started and is not paused, immediately trigger task scheduling
+    // 如果任务池已启动且未暂停，立即触发任务调度
     if (!this.isPaused) {
-      this.currentRunningCount.next(this.currentRunningCount.value); // Trigger task scheduling
+      this.currentRunningCount.next(this.currentRunningCount.value); // 触发任务调度
     }
   }
 
