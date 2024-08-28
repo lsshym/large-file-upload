@@ -9,6 +9,7 @@ lerna-debug.log*
 
 node_modules
 timenote.md
+stats.html
 dist
 dist-ssr
 *.local

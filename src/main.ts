@@ -6,7 +6,7 @@ import {
   generateSmallFileHash,
   PromisePool,
 } from "../lib/main";
-import axios from "axios";
+// import axios from "axios";
 
 document.querySelector<HTMLDivElement>("#app")!.innerHTML = `
   <div>
