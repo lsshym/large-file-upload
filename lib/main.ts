@@ -1,14 +1,17 @@
+import { PromisePool } from "./apis/promisePool";
 import {
-  currentFileChunks,
-  generateFileHashWithCrypto,
-  uploadChunksWithPool,
-} from "./fileTools";
-import { PromisePool } from "./promisePool";
+  generateFileHash,
+  generateFileHashWithArrayBuffer,
+  generateUUID,
+  generateSmallFileHash,
+} from "./apis/generateIdUtils";
+import { currentFileChunks } from "./apis/currentFileChunks";
 
 export {
   currentFileChunks,
-  generateFileHashWithCrypto,
-  uploadChunksWithPool,
+  generateFileHash,
+  generateFileHashWithArrayBuffer,
+  generateUUID,
+  generateSmallFileHash,
   PromisePool,
 };
-

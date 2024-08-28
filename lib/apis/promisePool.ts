@@ -52,6 +52,7 @@ export class PromisePool {
       // 订阅当前运行任务的数量
       // 这是发布订阅模式的核心，通过订阅任务数量的变化进行任务调度，当一个任务完成时自动触发下一个任务
       this.subscription = this.currentRunningCount.subscribe((count) => {
+        console.log("count", count);
         // 如果任务池已启动、未暂停、运行中的任务数少于最大并发数且队列中还有任务
         if (
           !this.isPaused &&
@@ -102,6 +103,11 @@ export class PromisePool {
           this.unsubscribe();
         }
       });
+      // this.queue.forEach(())
+      console.log(
+        "this.currentRunningCount.value",
+        this.currentRunningCount.value
+      );
 
       // 立即触发订阅以启动第一批任务
       this.currentRunningCount.next(this.currentRunningCount.value);
