@@ -24,9 +24,9 @@ FileChunksTools is a powerful and flexible library designed to handle the splitt
 
 To install the FileChunksTools library, use the following command:
 
-\`\`\`bash
+```bash
 npm install file-chunks-tools
-\`\`\`
+```
 
 ## Usage
 
@@ -50,12 +50,12 @@ Splits the given file into multiple chunks of the specified size.
 
 **Parameters**:
 
-- \`file: File\` - The file to be split.
-- \`customChunkSize?: number\` - Custom size of each chunk (in MB). If not provided, the function automatically determines the chunk size.
+- `file: File` - The file to be split.
+- `customChunkSize?: number` - Custom size of each chunk (in MB). If not provided, the function automatically determines the chunk size.
 
 **Returns**:
 
-- \`Promise<FileChunkResult>\` - An object containing the file chunks and chunk size.
+- `Promise<FileChunkResult>` - An object containing the file chunks and chunk size.
 
 ### `generateUUID`
 
@@ -63,7 +63,7 @@ Generates a Universally Unique Identifier (UUID) version 4.
 
 **Returns**:
 
-- \`string\` - A string representing the generated UUID.
+- `string` - A string representing the generated UUID.
 
 ### `generateSmallFileHash`
 
@@ -71,11 +71,11 @@ Generates a SHA-256 hash for small files (up to 2GB).
 
 **Parameters**:
 
-- \`file: File\` - The file for which to generate the hash.
+- `file: File` - The file for which to generate the hash.
 
 **Returns**:
 
-- \`Promise<string>\` - The generated hash as a string.
+- `Promise<string>` - The generated hash as a string.
 
 ### `generateFileHash`
 
@@ -83,12 +83,12 @@ Generates a hash for the given file, processing it in chunks.
 
 **Parameters**:
 
-- \`file: File\`
-- \`customChunkSize?: number\`
+- `file: File`
+- `customChunkSize?: number`
 
 **Returns**:
 
-- \`Promise<{ hash: string, chunkSize: number }>\` - A promise that resolves to an object containing the hash and chunk size.
+- `Promise<{ hash: string, chunkSize: number }>` - A promise that resolves to an object containing the hash and chunk size.
 
 ### `PromisePool`
 
@@ -96,16 +96,16 @@ Controls the execution of asynchronous tasks with a specified level of concurren
 
 **Constructor Parameters**:
 
-- \`functions: AsyncFunction[]\` - Array of task functions to be executed.
-- \`maxConcurrentTasks: number\` - Maximum number of concurrent tasks.
+- `functions: AsyncFunction[]` - Array of task functions to be executed.
+- `maxConcurrentTasks: number` - Maximum number of concurrent tasks.
 
 **Methods**:
 
-- \`exec<T>(): Promise<T[]>\` - Executes all asynchronous functions in the task pool.
-- \`pause(): void\` - Pauses task execution.
-- \`resume(): void\` - Resumes task execution.
-- \`clear(): void\` - Clears the task queue.
-- \`addTasks(newTasks: AsyncFunction[]): void\` - Adds new tasks to the queue.
+- `exec<T>(): Promise<T[]>` - Executes all asynchronous functions in the task pool.
+- `pause(): void` - Pauses task execution.
+- `resume(): void` - Resumes task execution.
+- `clear(): void` - Clears the task queue.
+- `addTasks(newTasks: AsyncFunction[]): void` - Adds new tasks to the queue.
 
 ### `uploadChunksWithPool`
 
@@ -113,12 +113,12 @@ Controls the concurrent upload of file chunks using PromisePool.
 
 **Parameters**:
 
-- \`options: UploadOptions\` - Configuration options for file upload.
-- \`cb: UploadCallback\` - Callback function to handle the upload of a single file chunk.
+- `options: UploadOptions` - Configuration options for file upload.
+- `cb: UploadCallback` - Callback function to handle the upload of a single file chunk.
 
 **Returns**:
 
-- \`PromisePool\` - Returns the instance of PromisePool managing the upload tasks.
+- `PromisePool` - Returns the instance of PromisePool managing the upload tasks.
 
 ## Examples
 
