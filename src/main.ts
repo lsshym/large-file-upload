@@ -1,8 +1,10 @@
 import {
-  uploadChunksWithPool,
   currentFileChunks,
-  generateFileHashWithCrypto,
-  // PromisePoolTest,
+  generateFileHash,
+  generateFileHashWithArrayBuffer,
+  generateUUID,
+  generateSmallFileHash,
+  PromisePool,
 } from "../lib/main";
 import axios from "axios";
 
@@ -18,18 +20,22 @@ fileInput.addEventListener("change", async (event) => {
   const file = input.files?.[0] || null;
   if (file) {
     // 创建文件切片，返回一个切片数组和每个切片的大小
-    const { fileChunks, chunkSize } = await currentFileChunks(file);
+    // const { fileChunks, chunkSize } = await currentFileChunks(file);
     // console.log('?????????????????????????????????????????')
-    console.log(fileChunks, chunkSize);
+    // console.log(fileChunks, chunkSize);
     // 计算文件hash
+    // 计算耗时
+    console.time("generateFileHashWithCrypto");
+    const value = await generateFileHash(file);
+    console.log("aborted", value);
+    console.timeEnd("generateFileHashWithCrypto");
+    // const hashId = await generateFileHashWithCrypto(file);
+    // const id = setInterval(() => {
+    //   console.log(Math.random());
+    // }, 0);
+    // clearInterval(id);
 
-    const hashId = await generateFileHashWithCrypto(file);
-    const id = setInterval(() => {
-      console.log(Math.random());
-    }, 0);
-    clearInterval(id);
-
-    console.log("hashId", hashId);
+    // console.log("hashId", hashId);
 
     // const pool = uploadChunksWithPool({ fileChunks }, (chunk, index) => {
     //   // const fd = new FormData();
