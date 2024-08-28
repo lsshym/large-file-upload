@@ -1,70 +1,10 @@
 import { PromisePool } from "./promisePool";
-
-export type FileChunkResult = {
-  fileChunks: Blob[];
-  chunkSize: number;
-  error?: string; // Optional error message
-};
-/**
- * Splits the given file into multiple chunks of the specified size. If `customChunkSize` is not provided,
- * the function automatically determines the chunk size based on the file size.
- *
- * @param {File} file - The file to be split.
- * @param {number} [customChunkSize] - Custom size of each chunk (in MB). If the value
- * is less than 1 or is not a valid number, the default size is 4MB. If the value is not an integer, it is rounded down.
- *
- * @returns {FileChunkResult} Returns an object with the following properties:
- * - `fileChunks`: An array of Blob objects, each representing a chunk of the file.
- * - `chunkSize`: The size of each chunk (in bytes).
- */
-export async function currentFileChunks(
-  file: File,
-  customChunkSize?: number
-): Promise<FileChunkResult> {
-  // If the file does not exist or the size is zero, return an empty result
-  if (!file || !file.size) {
-    throw new Error("File not found or size is 0");
-  }
-  const { size } = file;
-  const BASESIZE = 1024 * 1024; // Assume BASESIZE is 1MB
-
-  /**
-   * Calculates the chunk size based on customChunkSize or the file size.
-   * @returns {number} The calculated chunk size.
-   */
-  const calculateChunkSize = (): number => {
-    if (customChunkSize) {
-      // If customChunkSize is not a valid number, set it to 4MB
-      if (customChunkSize < 1 || isNaN(customChunkSize)) {
-        customChunkSize = 4;
-      } else {
-        customChunkSize = Math.floor(customChunkSize);
-      }
-      // Calculate chunk size based on customChunkSize and BASESIZE
-      return customChunkSize * BASESIZE;
-    }
-    // Determine chunk size based on file size. For files smaller than 100MB, the chunk size is 1MB;
-    // for files between 100MB and 1GB, the chunk size is 4MB; for files larger than 1GB, the chunk size is 8MB
-    if (size < 100 * BASESIZE) return 1 * BASESIZE;
-    if (size < 1024 * BASESIZE) return 4 * BASESIZE;
-    return 8 * BASESIZE;
-  };
-
-  const CHUNK_SIZE = calculateChunkSize();
-  const fileChunks: Blob[] = [];
-  let currentChunk = 0;
-
-  // Split the file into multiple chunks
-  while (currentChunk < size) {
-    const endChunk = Math.min(currentChunk + CHUNK_SIZE, size);
-    fileChunks.push(file.slice(currentChunk, endChunk));
-    currentChunk = endChunk;
-  }
-
-  return { fileChunks, chunkSize: CHUNK_SIZE };
-}
+// const worker = new Worker(new URL("./worker.ts", import.meta.url), {
+//   type: "module",
+// });
 
 /**
+ * 只适用2G以下的文件，超过2G ArrayBuffer会爆
  * Generates a unique hash identifier for the file using Crypto, based on the file content and optional extra parameters.
  * The return value is formatted in a UUID-like form (8-4-4-4-12).
  *
@@ -75,10 +15,11 @@ export async function currentFileChunks(
 export async function generateFileHashWithCrypto(
   file: File,
   extraParams: Record<string, any> = {}
-): Promise<string> {
+) {
+  // worker.postMessage('test')
+
   // Read file content and convert to ArrayBuffer
   const fileContentArrayBuffer = await file.arrayBuffer();
-
   // Encode extra parameters
   let combinedData: Uint8Array;
   if (Object.keys(extraParams).length > 0) {
@@ -166,6 +107,7 @@ export function uploadChunksWithPool(
 
   // Create a PromisePool instance and execute the task pool
   const pool = new PromisePool(tasks, maxTasks);
+  // const pool = new PromisePoolTest(tasks, maxTasks);
 
   // Return the results of the task pool execution
   return pool;
