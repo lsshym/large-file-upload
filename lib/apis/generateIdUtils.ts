@@ -40,7 +40,7 @@ export function generateUUID() {
 }
 
 /**
- * 只适用2G以下的文件
+ * Generates a SHA-256 hash for small files (up to 2GB).
  * Generates a unique hash identifier for the file using Crypto, based on the file content and optional extra parameters.
  * The return value is formatted in a UUID-like form (8-4-4-4-12).
  *
@@ -57,7 +57,6 @@ export async function generateSmallFileHash(file: File) {
   const hashBuffer = await crypto.subtle.digest("SHA-256", combinedData);
   const hashArray = Array.from(new Uint8Array(hashBuffer));
 
-  // Convert hash to hexadecimal string and format as UUID
   return hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
 }
 
