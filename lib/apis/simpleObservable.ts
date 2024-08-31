@@ -13,6 +13,7 @@ export class SimpleSubject<T> {
     this.observers.push(next);
 
     return {
+      // 取消当前订阅
       unsubscribe: () => {
         this.observers = this.observers.filter((observer) => observer !== next);
       },
@@ -52,3 +53,13 @@ export class SimpleBehaviorSubject<T> extends SimpleSubject<T> {
     super.next(value);
   }
 }
+
+// const test = new SimpleBehaviorSubject(0)
+// test.subscribe((value) => {
+
+//   console.log(value)
+//   // test.next(2)
+// })
+// test.next(1)
+
+// console.log(111111)

@@ -3,6 +3,17 @@ import dts from "vite-plugin-dts";
 import { visualizer } from "rollup-plugin-visualizer";
 
 export default defineConfig({
+  server: {
+    proxy: {
+      // 将 /api 的请求代理到 http://localhost:3030
+      "/api": {
+        target: "http://localhost:3030",
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api/, ""), // 可选：如果你想移除路径中的 /api
+      },
+      // 你可以继续添加其他路径的代理配置
+    },
+  },
   build: {
     lib: {
       entry: "./lib/main.ts",

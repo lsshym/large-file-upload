@@ -41,7 +41,7 @@ fileInput.addEventListener("change", async (event) => {
       fd.append("fileName", file.name);
       fd.append("chunkFile", chunk);
       return axios({
-        url: `/upload/${index}`,
+        url: `api/upload`,
         method: "post",
         headers: {
           "Content-Type": "multipart/form-data",
