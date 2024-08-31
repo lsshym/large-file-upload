@@ -6,5 +6,5 @@ export enum WorkerLabelsEnum {
 
 export type WorkerMessage = {
   label: WorkerLabelsEnum;
-  data: ArrayBuffer[];
+  data: ArrayBuffer[] | string;
 };
