@@ -53,13 +53,3 @@ export class SimpleBehaviorSubject<T> extends SimpleSubject<T> {
     super.next(value);
   }
 }
-
-// const test = new SimpleBehaviorSubject(0)
-// test.subscribe((value) => {
-
-//   console.log(value)
-//   // test.next(2)
-// })
-// test.next(1)
-
-// console.log(111111)
