@@ -67,7 +67,10 @@ export async function generateSmallFileHash(file: File) {
  * @param {number} [customChunkSize] - Optional custom size for file chunks.
  * @returns {Promise<{ hash: string, chunkSize: number }>} - A promise that resolves to an object containing the hash and chunk size.
  */
-export function generateFileHash(file: File, customChunkSize?: number) {
+export function generateFileHash(
+  file: File,
+  customChunkSize?: number
+): Promise<{ hash: string; chunkSize: number }> {
   return new Promise(async (resolve, reject) => {
     try {
       const { fileChunks, chunkSize }: FileChunkResult =

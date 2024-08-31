@@ -1,5 +1,4 @@
-import { BehaviorSubject, Subscription, Subject } from "rxjs";
-
+import { SimpleBehaviorSubject, SimpleSubject } from "./simpleObservable";
 // 定义异步函数的类型
 type AsyncFunction = () => Promise<any>;
 
@@ -11,17 +10,17 @@ export class PromisePool {
   // 存储所有任务的执行结果
   private results: any[] = [];
   // 用于取消订阅的 Subscription 对象
-  private subscription: Subscription | null = null;
+  private subscription: { unsubscribe: () => void } | null = null;
 
   // 当前正在运行的任务数，使用 BehaviorSubject 实现发布订阅模式
-  private currentRunningCount = new BehaviorSubject(0);
+  private currentRunningCount = new SimpleBehaviorSubject(0);
   // 标志任务是否暂停
   private isPaused = false;
   // 当前正在执行的任务索引
   private currentTaskIndex = 0;
 
   // 使用 Subject 来发布任务状态的变化，外部可以订阅
-  public status$ = new Subject<{ currentTask: number; queue: any[] }>();
+  public status$ = new SimpleSubject<{ currentTask: number; queue: any[] }>();
 
   /**
    * Constructor to initialize the task pool
