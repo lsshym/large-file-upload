@@ -2,6 +2,7 @@ export enum WorkerLabelsEnum {
   INIT,
   CHUNK,
   DONE,
+  ERROR,
 }
 
 export type WorkerMessage = {

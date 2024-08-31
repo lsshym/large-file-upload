@@ -107,6 +107,7 @@ export function generateFileHashWithArrayBuffer(
 ): Promise<string> {
   return new Promise((resolve, reject) => {
     try {
+      // 创建一个Worker实例
       const worker = new Worker(
         new URL("./worker/md5.worker.ts", import.meta.url),
         {
@@ -114,20 +115,29 @@ export function generateFileHashWithArrayBuffer(
         }
       );
 
+      // 监听Worker的消息事件
       worker.onmessage = (event: MessageEvent) => {
         const { label, data }: WorkerMessage = event.data;
 
         if (label === WorkerLabelsEnum.DONE) {
           resolve(data as string);
+          worker.terminate(); // 在任务完成后终止Worker
+        } else if (label === WorkerLabelsEnum.ERROR) {
+          reject(new Error(`Worker error: ${data}`));
+          worker.terminate(); // 发生错误时也终止Worker
         } else {
           reject(new Error(`Unexpected message label received: ${label}`));
+          worker.terminate();
         }
       };
 
+      // 处理Worker的错误事件
       worker.onerror = (error) => {
         reject(new Error(`Worker error: ${error.message}`));
+        worker.terminate(); // 在发生错误时终止Worker
       };
 
+      // 向Worker发送消息并传递ArrayBuffer
       worker.postMessage(
         {
           label: WorkerLabelsEnum.INIT,
