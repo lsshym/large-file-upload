@@ -1,5 +1,4 @@
-import { BehaviorSubject, Subscription, Subject } from "rxjs";
-
+import { SimpleBehaviorSubject, SimpleSubject } from "./simpleObservable";
 // 定义异步函数的类型
 type AsyncFunction = () => Promise<any>;
 
@@ -11,17 +10,17 @@ export class PromisePool {
   // 存储所有任务的执行结果
   private results: any[] = [];
   // 用于取消订阅的 Subscription 对象
-  private subscription: Subscription | null = null;
+  private subscription: { unsubscribe: () => void } | null = null;
 
   // 当前正在运行的任务数，使用 BehaviorSubject 实现发布订阅模式
-  private currentRunningCount = new BehaviorSubject(0);
+  private currentRunningCount = new SimpleBehaviorSubject(0);
   // 标志任务是否暂停
   private isPaused = false;
   // 当前正在执行的任务索引
   private currentTaskIndex = 0;
 
   // 使用 Subject 来发布任务状态的变化，外部可以订阅
-  public status$ = new Subject<{ currentTask: number; queue: any[] }>();
+  public status$ = new SimpleSubject<{ currentTask: number; queue: any[] }>();
 
   /**
    * Constructor to initialize the task pool
@@ -52,7 +51,6 @@ export class PromisePool {
       // 订阅当前运行任务的数量
       // 这是发布订阅模式的核心，通过订阅任务数量的变化进行任务调度，当一个任务完成时自动触发下一个任务
       this.subscription = this.currentRunningCount.subscribe((count) => {
-        console.log("count", count);
         // 如果任务池已启动、未暂停、运行中的任务数少于最大并发数且队列中还有任务
         if (
           !this.isPaused &&
@@ -103,11 +101,6 @@ export class PromisePool {
           this.unsubscribe();
         }
       });
-      // this.queue.forEach(())
-      console.log(
-        "this.currentRunningCount.value",
-        this.currentRunningCount.value
-      );
 
       // 立即触发订阅以启动第一批任务
       this.currentRunningCount.next(this.currentRunningCount.value);

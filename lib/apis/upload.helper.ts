@@ -31,7 +31,7 @@ export interface UploadOptions {
  *
  * @param {UploadOptions} options - Upload options, including the array of file chunks and the maximum number of concurrent tasks.
  * @param {UploadCallback} cb - Callback function to handle the upload of a single file chunk.
- * @returns {Promise<any>[]} - Returns an array of Promises representing the results of all uploads.
+ * @returns {PromisePool} - Returns an array of Promises representing the results of all uploads.
  */
 export function uploadChunksWithPool(
   { fileChunks, maxTasks = 4 }: UploadOptions,
