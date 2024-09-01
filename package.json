@@ -9,9 +9,9 @@
   ],
   "main": "./dist/file-chunks-tools.umd.cjs",
   "module": "./dist/file-chunks-tools.js",
-  "types": "./dist/types/main.d.ts",
+  "types": "./dist/main.d.ts",
   "exports": {
-    "types": "./dist/types/main.d.ts",
+    "types": "./dist/main.d.ts",
     "import": "./dist/file-chunks-tools.js",
     "require": "./dist/file-chunks-tools.umd.cjs"
   },
