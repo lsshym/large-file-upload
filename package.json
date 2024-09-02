@@ -36,10 +36,16 @@
   },
   "keywords": [
     "file upload",
-    "file chunking",
-    "file hashing",
+    "file chunk",
+    "file hash",
     "concurrent upload",
-    "promise pool"
+    "promise pool",
+    "large files",
+    "parallel upload",
+    "file management",
+    "split files",
+    "hash generation",
+    "file processing"
   ],
   "author": "lsshym",
   "license": "MIT",
