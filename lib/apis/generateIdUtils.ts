@@ -40,9 +40,9 @@ export function generateUUID() {
 }
 
 /**
- * Generates a SHA-256 hash for small files (up to 2GB).
+ * This func seems redundant.
+ * Generates a SHA-256 hash for small files (Maximum not exceeding 2GB).
  * Generates a unique hash identifier for the file using Crypto, based on the file content and optional extra parameters.
- * The return value is formatted in a UUID-like form (8-4-4-4-12).
  *
  * @param {File} file - The file object for which to generate the hash.
  * @param {Record<string, any>} [extraParams={}] - Optional extra parameters object, which will be included in the hash computation along with the file content.
@@ -55,6 +55,7 @@ export async function generateSmallFileHash(file: File) {
 
   // Generate SHA-256 hash
   const hashBuffer = await crypto.subtle.digest("SHA-256", combinedData);
+
   const hashArray = Array.from(new Uint8Array(hashBuffer));
 
   return hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");

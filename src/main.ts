@@ -3,7 +3,6 @@ import {
   generateFileHash,
   generateFileHashWithArrayBuffer,
   generateUUID,
-  generateSmallFileHash,
   PromisePool,
   uploadChunksWithPool,
 } from "../lib/main";
@@ -25,6 +24,8 @@ fileInput.addEventListener("change", async (event) => {
 
     console.time("generateFileHashWithCrypto");
     const { hash: hashId } = await generateFileHash(file);
+    // const value = await generateSmallFileHash(file);
+
     console.log("aborted", hashId);
     console.timeEnd("generateFileHashWithCrypto");
     // const hashId = await generateFileHashWithCrypto(file);
@@ -32,7 +33,7 @@ fileInput.addEventListener("change", async (event) => {
     //   console.log(Math.random());
     // }, 0);
     // clearInterval(id);
-
+    return;
     // console.log("hashId", hashId);
     const pool = uploadChunksWithPool({ fileChunks }, (chunk, index) => {
       const fd = new FormData();
