@@ -13,10 +13,15 @@ file-chunks-tools is a powerful and flexible library designed to handle the spli
   - [currentFileChunks](#currentfilechunks)
   - [generateUUID](#generateuuid)
   - [generateFileHash](#generatefilehash)
+  - [generateFileHashWithArrayBuffer](#generatefilehashwitharraybuffer)
   - [PromisePool](#promisepool)
   - [uploadChunksWithPool](#uploadchunkswithpool)
 - [Examples](#examples)
   - [Example: Splitting and Uploading a File](#example-splitting-and-uploading-a-file)
+  - [Example: Generating a UUID](#example-generating-a-uuid)
+  - [Example: Generating a File Hash in Chunks](#example-generating-a-file-hash-in-chunks)
+  - [Example: Managing Concurrent Uploads with PromisePool](#example-managing-concurrent-uploads-with-promisepool)
+  - [Example: Generating a File Hash with ArrayBuffer](#example-generating-a-file-hash-with-arraybuffer)
 - [License](#license)
 
 ## Installation
