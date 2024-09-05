@@ -5,10 +5,6 @@ file-chunks-tools is a powerful and flexible library designed to handle the spli
 ## Table of Contents
 
 - [Installation](#installation)
-- [Usage](#usage)
-  - [Splitting Files into Chunks](#splitting-files-into-chunks)
-  - [Generating File Hashes](#generating-file-hashes)
-  - [Managing Concurrent Uploads](#managing-concurrent-uploads)
 - [API Reference](#api-reference)
   - [currentFileChunks](#currentfilechunks)
   - [generateUUID](#generateuuid)

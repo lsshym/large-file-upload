@@ -35,17 +35,16 @@
     "url": "https://github.com/lsshym/file-chunks-tools.git"
   },
   "keywords": [
-    "file upload",
     "file chunk",
+    "file chunks",
     "file hash",
     "concurrent upload",
-    "promise pool",
+    "promisepPool",
     "large files",
-    "parallel upload",
+    "large file upload",
     "file management",
     "split files",
-    "hash generation",
-    "file processing"
+    "hash generation"
   ],
   "author": "lsshym",
   "license": "MIT",
