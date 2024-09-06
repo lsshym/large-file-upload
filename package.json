@@ -32,7 +32,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/lsshym/file-chunks-tools.git"
+    "url": "https://github.com/lsshym/file-chunks-tools"
   },
   "keywords": [
     "file chunk",
@@ -48,5 +48,5 @@
   ],
   "author": "lsshym",
   "license": "MIT",
-  "homepage": "https://github.com/lsshym/file-chunks-tools#readme"
+  "homepage": "https://github.com/lsshym/file-chunks-tools"
 }
