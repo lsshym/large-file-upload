@@ -11,7 +11,6 @@ export default defineConfig({
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api/, ""), // 可选：如果你想移除路径中的 /api
       },
-      // 你可以继续添加其他路径的代理配置
     },
   },
   build: {
