@@ -15,7 +15,7 @@ document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
 `;
 // 监听文件上传事件
 const fileInput = document.getElementById('fileInput') as HTMLInputElement;
-fileInput.addEventListener('change', async (event) => {
+fileInput.addEventListener('change', async event => {
   const input = event.target as HTMLInputElement;
   const file = input.files?.[0] || null;
   if (file) {
@@ -39,7 +39,7 @@ fileInput.addEventListener('change', async (event) => {
       const fd = new FormData();
       fd.append('fileHash', hashId);
       fd.append('chunkHash', `${hashId}-${index}`);
-      fd.append('fileName', file.name);
+      // fd.append('fileName', file.name);
       fd.append('chunkFile', chunk);
       return axios({
         url: `api/upload`,
@@ -74,7 +74,7 @@ fileInput.addEventListener('change', async (event) => {
     // const pool = new PromisePoolTest([task1, task2, task3, task4], 2);
     // 开始任务
     // console.log('6666666666666666666666666666666666')
-    pool.exec().then((values) => {
+    pool.exec().then(values => {
       // 任务完成后打印所以结果
       console.log('All tasks completed!', values);
     });
