@@ -1,10 +1,10 @@
-import { PromisePool } from "./promisePool";
+import { PromisePool } from './promisePool';
 
 /**
  * Represents a file chunk to be uploaded.
  * Modify this type according to the actual data structure.
  */
-export type FileChunk = any;
+export type FileChunk = Blob;
 
 /**
  * Callback function type for handling the upload of a single file chunk.
@@ -13,7 +13,7 @@ export type FileChunk = any;
  * @param {number} index - The index of the file chunk in the array.
  * @returns {Promise<any>} - Returns a Promise representing the result of the upload.
  */
-export type UploadCallback = (item: FileChunk, index: number) => Promise<any>;
+export type UploadCallback = (item: FileChunk, index: number) => Promise<Blob>;
 
 /**
  * Configuration options for file upload.
@@ -35,7 +35,7 @@ export interface UploadOptions {
  */
 export function uploadChunksWithPool(
   { fileChunks, maxTasks = 4 }: UploadOptions,
-  cb: UploadCallback
+  cb: UploadCallback,
 ): PromisePool {
   // Convert fileChunks into an array of asynchronous tasks
   const tasks = fileChunks.map((item, index) => {

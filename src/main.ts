@@ -5,29 +5,29 @@ import {
   generateUUID,
   PromisePool,
   uploadChunksWithPool,
-} from "../lib/main";
-import axios from "axios";
+} from '../lib/main';
+import axios from 'axios';
 
-document.querySelector<HTMLDivElement>("#app")!.innerHTML = `
+document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
   <div>
     <input type="file" id="fileInput" />
   </div>
 `;
 // 监听文件上传事件
-const fileInput = document.getElementById("fileInput") as HTMLInputElement;
-fileInput.addEventListener("change", async (event) => {
+const fileInput = document.getElementById('fileInput') as HTMLInputElement;
+fileInput.addEventListener('change', async (event) => {
   const input = event.target as HTMLInputElement;
   const file = input.files?.[0] || null;
   if (file) {
     // 创建文件切片，返回一个切片数组和每个切片的大小
     const { fileChunks, chunkSize } = await currentFileChunks(file);
 
-    console.time("generateFileHashWithCrypto");
+    console.time('generateFileHashWithCrypto');
     const { hash: hashId } = await generateFileHash(file);
     // const value = await generateSmallFileHash(file);
 
-    console.log("aborted", hashId);
-    console.timeEnd("generateFileHashWithCrypto");
+    console.log('aborted', hashId);
+    console.timeEnd('generateFileHashWithCrypto');
     // const hashId = await generateFileHashWithCrypto(file);
     // const id = setInterval(() => {
     //   console.log(Math.random());
@@ -37,15 +37,15 @@ fileInput.addEventListener("change", async (event) => {
     // console.log("hashId", hashId);
     const pool = uploadChunksWithPool({ fileChunks }, (chunk, index) => {
       const fd = new FormData();
-      fd.append("fileHash", hashId);
-      fd.append("chunkHash", `${hashId}-${index}`);
-      fd.append("fileName", file.name);
-      fd.append("chunkFile", chunk);
+      fd.append('fileHash', hashId);
+      fd.append('chunkHash', `${hashId}-${index}`);
+      fd.append('fileName', file.name);
+      fd.append('chunkFile', chunk);
       return axios({
         url: `api/upload`,
-        method: "post",
+        method: 'post',
         headers: {
-          "Content-Type": "multipart/form-data",
+          'Content-Type': 'multipart/form-data',
         },
         data: fd, // 确保上传的内容正确传递
       });
@@ -76,7 +76,7 @@ fileInput.addEventListener("change", async (event) => {
     // console.log('6666666666666666666666666666666666')
     pool.exec().then((values) => {
       // 任务完成后打印所以结果
-      console.log("All tasks completed!", values);
+      console.log('All tasks completed!', values);
     });
     // console.log('777777777777777777777777')
     // 暂停

@@ -1,4 +1,4 @@
-import { SimpleBehaviorSubject, SimpleSubject } from "./simpleObservable";
+import { SimpleBehaviorSubject, SimpleSubject } from './simpleObservable';
 // 定义异步函数的类型
 type AsyncFunction = () => Promise<any>;
 
@@ -29,7 +29,7 @@ export class PromisePool {
    */
   constructor(
     functions: AsyncFunction[],
-    maxConcurrentTasks: number = navigator.hardwareConcurrency || 4
+    maxConcurrentTasks: number = navigator.hardwareConcurrency || 4,
   ) {
     // 初始化任务队列，将任务函数映射到其在结果数组中的索引
     this.queue = functions.map((fn, index) => ({ fn, index }));
@@ -52,11 +52,7 @@ export class PromisePool {
       // 这是发布订阅模式的核心，通过订阅任务数量的变化进行任务调度，当一个任务完成时自动触发下一个任务
       this.subscription = this.currentRunningCount.subscribe((count) => {
         // 如果任务池已启动、未暂停、运行中的任务数少于最大并发数且队列中还有任务
-        if (
-          !this.isPaused &&
-          count < this.maxConcurrentTasks &&
-          this.queue.length > 0
-        ) {
+        if (!this.isPaused && count < this.maxConcurrentTasks && this.queue.length > 0) {
           // 计算可以启动的任务数
           const availableSlots = this.maxConcurrentTasks - count;
           // 从队列中提取可以执行的任务
@@ -86,9 +82,7 @@ export class PromisePool {
               })
               .finally(() => {
                 // 无论任务成功或失败，减少运行中的任务数
-                this.currentRunningCount.next(
-                  this.currentRunningCount.value - 1
-                );
+                this.currentRunningCount.next(this.currentRunningCount.value - 1);
               });
           });
         }

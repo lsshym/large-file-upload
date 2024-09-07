@@ -17,11 +17,11 @@ export type FileChunkResult = {
  */
 export async function currentFileChunks(
   file: File,
-  customChunkSize?: number
+  customChunkSize?: number,
 ): Promise<FileChunkResult> {
   // 如果文件不存在或大小为零，则抛出错误
   if (!file || !file.size) {
-    throw new Error("File not found or size is 0");
+    throw new Error('File not found or size is 0');
   }
   const { size } = file;
   const BASESIZE = 1024 * 1024; // 假设BASESIZE为1MB
