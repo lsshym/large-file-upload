@@ -1,5 +1,7 @@
 # FileChunksTools Library
 
+> **⚠️ Note: The FileChunksTools library is no longer maintained. Please use the new library [file-upload-tools](https://www.npmjs.com/package/file-upload-tools).**
+
 FileChunksTools is a powerful and flexible library designed to handle the splitting, processing, and uploading of large files in chunks. This library provides a `PromisePool` implementation to manage and control concurrent operations, ensuring efficient use of resources and smooth handling of large file uploads.
 
 ## Table of Contents
