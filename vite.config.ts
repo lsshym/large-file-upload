@@ -9,15 +9,15 @@ export default defineConfig({
       '/api': {
         target: 'http://localhost:3030',
         changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/api/, ''), // 可选：如果你想移除路径中的 /api
+        rewrite: path => path.replace(/^\/api/, ''), // 可选：如果你想移除路径中的 /api
       },
     },
   },
   build: {
     lib: {
       entry: './lib/main.ts',
-      name: 'file-chunks-tools', // 库的全局变量名称（用于 UMD/IIFE 构建）
-      fileName: 'file-chunks-tools', // 输出文件名，基于不同格式生成文件
+      name: 'file-upload-tools', // 库的全局变量名称（用于 UMD/IIFE 构建）
+      fileName: 'file-upload-tools', // 输出文件名，基于不同格式生成文件
     },
   },
   plugins: [
