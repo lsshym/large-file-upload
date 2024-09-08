@@ -1,0 +1,4 @@
+package.json
+dist
+.umi
+.umi-production

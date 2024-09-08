@@ -1,25 +1,23 @@
-# FileChunksTools Library
+# file-upload-tools
 
-> **⚠️ Note: The FileChunksTools library is no longer maintained. Please use the new library [file-upload-tools](https://www.npmjs.com/package/file-upload-tools).**
-
-FileChunksTools is a powerful and flexible library designed to handle the splitting, processing, and uploading of large files in chunks. This library provides a `PromisePool` implementation to manage and control concurrent operations, ensuring efficient use of resources and smooth handling of large file uploads.
+file-upload-tools is a powerful and flexible library designed to handle the splitting, processing, and uploading of large files in chunks.
 
 ## Table of Contents
 
 - [Installation](#installation)
-- [Usage](#usage)
-  - [Splitting Files into Chunks](#splitting-files-into-chunks)
-  - [Generating File Hashes](#generating-file-hashes)
-  - [Managing Concurrent Uploads](#managing-concurrent-uploads)
 - [API Reference](#api-reference)
   - [currentFileChunks](#currentfilechunks)
   - [generateUUID](#generateuuid)
-  - [generateSmallFileHash](#generatesmallfilehash)
   - [generateFileHash](#generatefilehash)
+  - [generateFileHashWithArrayBuffer](#generatefilehashwitharraybuffer)
   - [PromisePool](#promisepool)
   - [uploadChunksWithPool](#uploadchunkswithpool)
 - [Examples](#examples)
   - [Example: Splitting and Uploading a File](#example-splitting-and-uploading-a-file)
+  - [Example: Generating a UUID](#example-generating-a-uuid)
+  - [Example: Generating a File Hash in Chunks](#example-generating-a-file-hash-in-chunks)
+  - [Example: Managing Concurrent Uploads with PromisePool](#example-managing-concurrent-uploads-with-promisepool)
+  - [Example: Generating a File Hash with ArrayBuffer](#example-generating-a-file-hash-with-arraybuffer)
 - [License](#license)
 
 ## Installation
@@ -27,22 +25,8 @@ FileChunksTools is a powerful and flexible library designed to handle the splitt
 To install the FileChunksTools library, use the following command:
 
 ```bash
-npm install file-chunks-tools
+npm install file-upload-tools
 ```
-
-## Usage
-
-### Splitting Files into Chunks
-
-The `currentFileChunks` function is used to split a file into multiple chunks based on a specified chunk size.
-
-### Generating File Hashes
-
-The library provides functions to generate unique identifiers (UUIDs) and hashes for files. These can be used to verify the integrity of file uploads.
-
-### Managing Concurrent Uploads
-
-The `PromisePool` class allows you to manage and control the concurrent execution of tasks, such as uploading file chunks. You can set the maximum number of concurrent tasks to optimize performance.
 
 ## API Reference
 
@@ -59,29 +43,9 @@ Splits the given file into multiple chunks of the specified size.
 
 - `Promise<FileChunkResult>` - An object containing the file chunks and chunk size.
 
-### `generateUUID`
-
-Generates a Universally Unique Identifier (UUID) version 4.
-
-**Returns**:
-
-- `string` - A string representing the generated UUID.
-
-### `generateSmallFileHash`
-
-Generates a SHA-256 hash for small files (up to 2GB).
-
-**Parameters**:
-
-- `file: File` - The file for which to generate the hash.
-
-**Returns**:
-
-- `Promise<string>` - The generated hash as a string.
-
 ### `generateFileHash`
 
-Generates a hash for the given file, processing it in chunks.
+Calculate the hash of the given file using MD5.
 
 **Parameters**:
 
@@ -91,6 +55,26 @@ Generates a hash for the given file, processing it in chunks.
 **Returns**:
 
 - `Promise<{ hash: string, chunkSize: number }>` - A promise that resolves to an object containing the hash and chunk size.
+
+### `generateFileHashWithArrayBuffer`
+
+Generates a hash using an array of ArrayBuffers.
+
+**Parameters**:
+
+- `arrayBuffers: ArrayBuffer[]` - An array of ArrayBuffer objects containing file data chunks.
+
+**Returns**:
+
+- `Promise<string>` - A promise that resolves to the generated hash as a string.
+
+### `generateUUID`
+
+Generates a Universally Unique Identifier (UUID) version 4. If there is no need for fast file uploads, this function can be used. Compared to computing the hash, this method is much faster.
+
+**Returns**:
+
+- `string` - A string representing the generated UUID.
 
 ### `PromisePool`
 
@@ -129,23 +113,23 @@ Controls the concurrent upload of file chunks using PromisePool.
 This example demonstrates how to use the `currentFileChunks` function to split a file into multiple chunks:
 
 ```typescript
-import { currentFileChunks } from "file-chunks-tools";
+import { currentFileChunks } from 'file-upload-tools';
 
 async function splitFile(file: File) {
   // Split the file into chunks
   const { fileChunks, chunkSize } = await currentFileChunks(file);
 
-  console.log("File has been split into the following chunks:");
+  console.log('File has been split into the following chunks:');
   fileChunks.forEach((chunk, index) => {
     console.log(`Chunk ${index + 1} of size ${chunk.size} bytes`);
   });
 
-  console.log("Chunk Size:", chunkSize);
+  console.log('Chunk Size:', chunkSize);
 }
 
 // Example usage with a file input
 const fileInput = document.querySelector('input[type="file"]');
-fileInput.addEventListener("change", (event) => {
+fileInput.addEventListener('change', event => {
   const file = (event.target as HTMLInputElement).files[0];
   if (file) {
     splitFile(file);
@@ -158,40 +142,15 @@ fileInput.addEventListener("change", (event) => {
 This example shows how to generate a UUID using the `generateUUID` function:
 
 ```typescript
-import { generateUUID } from "file-chunks-tools";
+import { generateUUID } from 'file-upload-tools';
 
 function generateUniqueIdentifier() {
   const uuid = generateUUID();
-  console.log("Generated UUID:", uuid);
+  console.log('Generated UUID:', uuid);
 }
 
 // Generate and log a UUID
 generateUniqueIdentifier();
-```
-
-### Example: Generating a Small File Hash
-
-This example illustrates how to generate a SHA-256 hash for a small file (less than 2GB) using `generateSmallFileHash`:
-
-```typescript
-import { generateSmallFileHash } from "file-chunks-tools";
-
-async function hashSmallFile(file: File) {
-  const hash = await generateSmallFileHash(file);
-  console.log("Generated hash for the small file:", hash);
-}
-
-// Example usage with a file input
-const fileInput = document.querySelector('input[type="file"]');
-fileInput.addEventListener("change", (event) => {
-  const file = (event.target as HTMLInputElement).files[0];
-  if (file && file.size < 2 * 1024 * 1024 * 1024) {
-    // Ensure file is less than 2GB
-    hashSmallFile(file);
-  } else {
-    console.error("File is too large for this hashing method.");
-  }
-});
 ```
 
 ### Example: Generating a File Hash in Chunks
@@ -199,18 +158,18 @@ fileInput.addEventListener("change", (event) => {
 This example shows how to generate a hash for a large file using the `generateFileHash` function, which processes the file in chunks:
 
 ```typescript
-import { generateFileHash } from "file-chunks-tools";
+import { generateFileHash } from 'file-upload-tools';
 
 async function hashLargeFile(file: File) {
   const { hash, chunkSize } = await generateFileHash(file);
 
-  console.log("Generated hash for the large file:", hash);
-  console.log("Chunk Size:", chunkSize);
+  console.log('Generated hash for the large file:', hash);
+  console.log('Chunk Size:', chunkSize);
 }
 
 // Example usage with a file input
 const fileInput = document.querySelector('input[type="file"]');
-fileInput.addEventListener("change", (event) => {
+fileInput.addEventListener('change', event => {
   const file = (event.target as HTMLInputElement).files[0];
   if (file) {
     hashLargeFile(file);
@@ -223,7 +182,7 @@ fileInput.addEventListener("change", (event) => {
 This example demonstrates how to use the `uploadChunksWithPool` function to manage the concurrent upload of file chunks:
 
 ```typescript
-import { currentFileChunks, uploadChunksWithPool } from "file-chunks-tools";
+import { currentFileChunks, uploadChunksWithPool } from 'file-upload-tools';
 
 async function uploadFile(file: File) {
   // Step 1: Split the file into chunks
@@ -233,8 +192,8 @@ async function uploadFile(file: File) {
   const uploadChunk = async (chunk: Blob, index: number) => {
     console.log(`Uploading chunk ${index + 1} of ${fileChunks.length}`);
     // Simulate an upload request
-    await fetch("/upload", {
-      method: "POST",
+    await fetch('/upload', {
+      method: 'POST',
       body: chunk,
     });
   };
@@ -244,16 +203,47 @@ async function uploadFile(file: File) {
 
   // Execute the upload tasks
   pool.exec().then(() => {
-    console.log("All chunks uploaded successfully!");
+    console.log('All chunks uploaded successfully!');
   });
 }
 
 // Example usage with a file input
 const fileInput = document.querySelector('input[type="file"]');
-fileInput.addEventListener("change", (event) => {
+fileInput.addEventListener('change', event => {
   const file = (event.target as HTMLInputElement).files[0];
   if (file) {
     uploadFile(file);
+  }
+});
+```
+
+### Example: Generating a File Hash with ArrayBuffer
+
+This example demonstrates how to use the `generateFileHashWithArrayBuffer` function to generate a hash for a file using an array of ArrayBuffers and a Web Worker.
+
+```typescript
+import { generateFileHashWithArrayBuffer } from './generateFileHashWithArrayBuffer';
+
+async function handleFileInput(file: File) {
+  const arrayBuffers = [];
+  const chunkSize = 1024 * 1024; // 1 MB chunks
+  const fileReader = new FileReader();
+
+  for (let offset = 0; offset < file.size; offset += chunkSize) {
+    const blob = file.slice(offset, offset + chunkSize);
+    const arrayBuffer = await blob.arrayBuffer();
+    arrayBuffers.push(arrayBuffer);
+  }
+
+  const hash = await generateFileHashWithArrayBuffer(arrayBuffers);
+  console.log('Generated File Hash:', hash);
+}
+
+const fileInput = document.querySelector('input[type="file"]');
+fileInput.addEventListener('change', event => {
+  const file = (event.target as HTMLInputElement).files[0];
+  if (file) {
+    handleFileInput(file);
   }
 });
 ```
