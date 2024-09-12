@@ -3,19 +3,19 @@ export class SimpleSubject<T> {
   protected observers: Array<(value: T) => void> = [];
   protected isCompleted: boolean = false;
 
-  subscribe(next: (value: T) => void) {
+  subscribe(cb: (value: T) => void) {
     if (this.isCompleted) {
       return {
         unsubscribe: () => {},
       };
     }
 
-    this.observers.push(next);
+    this.observers.push(cb);
 
     return {
       // 取消当前订阅
       unsubscribe: () => {
-        this.observers = this.observers.filter((observer) => observer !== next);
+        this.observers = this.observers.filter((observer) => observer !== cb);
       },
     };
   }

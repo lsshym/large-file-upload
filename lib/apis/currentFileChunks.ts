@@ -3,6 +3,9 @@ export type FileChunkResult = {
   chunkSize: number;
   error?: string; // Optional error message
 };
+
+const BASESIZE = 1024 * 1024; // 假设BASESIZE为1MB
+
 /**
  * Splits the given file into multiple chunks of the specified size. If `customChunkSize` is not provided,
  * the function automatically determines the chunk size based on the file size.
@@ -23,8 +26,6 @@ export async function currentFileChunks(
   if (!file || !file.size) {
     throw new Error('File not found or size is 0');
   }
-  const { size } = file;
-  const BASESIZE = 1024 * 1024; // 假设BASESIZE为1MB
 
   /**
    * 根据customChunkSize或文件大小计算分块大小。
@@ -41,23 +42,43 @@ export async function currentFileChunks(
       // 根据customChunkSize和BASESIZE计算分块大小
       return customChunkSize * BASESIZE;
     }
-    // 根据文件大小确定分块大小。对于小于100MB的文件，分块大小为1MB；
-    // 对于100MB到1GB之间的文件，分块大小为4MB；对于大于1GB的文件，分块大小为8MB
+    // 如果没有自定义大小，根据文件大小确定分块大小。对于小于100MB的文件，分块大小为1MB；
+    // 对于100MB到1GB之间的文件，分块大小为5MB；对于大于1GB的文件，分块大小为10MB
     if (size < 100 * BASESIZE) return 1 * BASESIZE;
-    if (size < 1024 * BASESIZE) return 4 * BASESIZE;
-    return 8 * BASESIZE;
+    if (size < 1024 * BASESIZE) return 5 * BASESIZE;
+    return 10 * BASESIZE;
   };
+
+  const { size } = file;
 
   const CHUNK_SIZE = calculateChunkSize();
   const fileChunks: Blob[] = [];
   let currentChunk = 0;
 
-  // 将文件分割成多个块
   while (currentChunk < size) {
     const endChunk = Math.min(currentChunk + CHUNK_SIZE, size);
     fileChunks.push(file.slice(currentChunk, endChunk));
     currentChunk = endChunk;
   }
-
   return { fileChunks, chunkSize: CHUNK_SIZE };
+}
+
+export function autoCalculateChunkSize(file: File) {
+  if (!file || !file.size) {
+    throw new Error('File not found or size is 0');
+  }
+
+  const { size } = file;
+  let value;
+  if (size < 100 * BASESIZE) value = 1 * BASESIZE;
+  if (size < 1024 * BASESIZE) value = 5 * BASESIZE;
+  if (size > 1024 * BASESIZE) value = 10 * BASESIZE;
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  // const connection = (navigator as any).connection;
+  // if (connection) {
+  //   connection.downlink
+  // }
+
+  return value;
 }
