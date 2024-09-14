@@ -1,8 +1,9 @@
 export enum WorkerLabelsEnum {
-  INIT,
-  CHUNK,
-  DONE,
-  ERROR,
+  INIT = 'INIT',
+  INIT_DONE = 'INIT_DONE',
+  DOING = 'DOING',
+  DONE = 'DONE',
+  ERROR = 'ERROR',
 }
 
 export type WorkerMessage = {

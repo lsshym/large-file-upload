@@ -1,31 +1,22 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 /// <reference lib="webworker" />
 
-import { createBLAKE3 } from 'hash-wasm';
+import { blake3 } from 'hash-wasm';
 import { WorkerLabelsEnum, WorkerMessage } from './worker.enum';
+const reader = new FileReader();
 
 addEventListener('message', async (event: MessageEvent) => {
-  const { label, data }: WorkerMessage = event.data;
-  if (!label) throw new Error(`Unexpected label received: ${label}`);
-
+  const { label, data, file } = event.data;
   try {
-    const md5 = await createBLAKE3();
     switch (label) {
       case WorkerLabelsEnum.INIT:
-        md5.init();
-        break;
-      case WorkerLabelsEnum.DOING:
-        (data as ArrayBuffer[]).forEach(buffer => {
-          md5.update(new Uint8Array(buffer));
-        });
-        break;
-      case WorkerLabelsEnum.DONE: {
-        const hash = md5.digest('hex');
+        console.log('begin')
+
         postMessage({
           label: WorkerLabelsEnum.DONE,
-          data: hash,
+          data: await blake3(new Uint8Array(data)),
         });
         break;
-      }
     }
   } catch (error) {
     // 发送错误信息回主线程

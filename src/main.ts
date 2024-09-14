@@ -26,7 +26,8 @@ fileInput.addEventListener('change', async event => {
     const { hash: hashId } = await generateFileHash(file);
     // const value = await generateSmallFileHash(file);
 
-    console.log('aborted', hashId);
+    console.log('aborted', hashId, file.size / 1024 / 1024 / 1024);
+
     console.timeEnd('generateFileHashWithCrypto');
     // const hashId = await generateFileHashWithCrypto(file);
     // const id = setInterval(() => {
