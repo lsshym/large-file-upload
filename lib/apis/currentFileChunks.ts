@@ -62,23 +62,3 @@ export async function currentFileChunks(
   }
   return { fileChunks, chunkSize: CHUNK_SIZE };
 }
-
-export function autoCalculateChunkSize(file: File) {
-  if (!file || !file.size) {
-    throw new Error('File not found or size is 0');
-  }
-
-  const { size } = file;
-  let value;
-  if (size < 100 * BASESIZE) value = 1 * BASESIZE;
-  if (size < 1024 * BASESIZE) value = 5 * BASESIZE;
-  if (size > 1024 * BASESIZE) value = 10 * BASESIZE;
-
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  // const connection = (navigator as any).connection;
-  // if (connection) {
-  //   connection.downlink
-  // }
-
-  return value;
-}
