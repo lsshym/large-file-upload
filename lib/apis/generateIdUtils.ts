@@ -76,9 +76,8 @@ export function generateFileHash(file: File, customChunkSize?: number): Promise<
   return currentFileChunks(file, customChunkSize)
     .then(async ({ fileChunks, chunkSize }: FileChunkResult) => {
       //如果避免内存占用过多，添加一点到woker，然后释放资源
-      // const arrayBuffers = await Promise.all(fileChunks.map(chunk => chunk.arrayBuffer()));
-      // const value = await generateFileHashWithArrayBuffer(arrayBuffers);
-      const value = await generateFileHashWithArrayBufferTTTT(file);
+      const arrayBuffers = await Promise.all(fileChunks.map(chunk => chunk.arrayBuffer()));
+      const value = await generateFileHashWithArrayBuffer(arrayBuffers);
 
       return {
         hash: value,
@@ -100,10 +99,7 @@ export function generateFileHashWithArrayBuffer(arrayBuffers: ArrayBuffer[]): Pr
   return new Promise((resolve, reject) => {
     try {
       // 如何开多个worker加速计算，
-      // const worker = new Worker(new URL('./worker/md5.worker.ts', import.meta.url), {
-      //   type: 'module',
-      // });
-      const worker = new Worker(new URL('./worker/blake3.worker.ts', import.meta.url), {
+      const worker = new Worker(new URL('./worker/md5.worker.ts', import.meta.url), {
         type: 'module',
       });
 
@@ -117,22 +113,8 @@ export function generateFileHashWithArrayBuffer(arrayBuffers: ArrayBuffer[]): Pr
             worker.terminate(); // 在任务完成后终止Worker
             break;
 
-          case WorkerLabelsEnum.INIT_DONE:
-            worker.postMessage(
-              {
-                label: WorkerLabelsEnum.DOING,
-                data: arrayBuffers,
-              },
-              arrayBuffers,
-            );
-            break;
-          case WorkerLabelsEnum.ERROR:
-            reject(new Error(`Worker error: ${data}`));
-            worker.terminate(); // 发生错误时终止Worker
-            break;
-
           default:
-            reject(new Error(`Unexpected message label received: ${label}`));
+            reject(new Error(`Unexpected message label received: ${label}, data: ${data}`));
             worker.terminate(); // 未预期的消息也终止Worker
             break;
         }
@@ -143,9 +125,13 @@ export function generateFileHashWithArrayBuffer(arrayBuffers: ArrayBuffer[]): Pr
         worker.terminate(); // 在发生错误时终止Worker
       };
 
-      worker.postMessage({
-        label: WorkerLabelsEnum.INIT,
-      });
+      worker.postMessage(
+        {
+          label: WorkerLabelsEnum.INIT,
+          data: arrayBuffers,
+        },
+        arrayBuffers,
+      );
     } catch (error) {
       reject(new Error(`Failed to generate file hash with array buffer: ${error}`));
     }
@@ -157,7 +143,7 @@ export function generateFileHashWithArrayBuffer(arrayBuffers: ArrayBuffer[]): Pr
  * @param {ArrayBuffer[]} arrayBuffers - An array of ArrayBuffer objects containing file data chunks.
  * @returns {Promise<string>} - A promise that resolves to the generated hash as a string.
  */
-export function generateFileHashWithArrayBufferTTTT(file: Blob): Promise<string> {
+export function generateFileHashBlake3(file: Blob): Promise<string> {
   return new Promise((resolve, reject) => {
     try {
       // 如何开多个worker加速计算，

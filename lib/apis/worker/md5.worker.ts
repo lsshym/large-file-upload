@@ -10,15 +10,8 @@ addEventListener('message', async (event: MessageEvent) => {
   try {
     switch (label) {
       case WorkerLabelsEnum.INIT:
-        if (!md5) {
-          md5 = await createMD5();
-        }
+        md5 = await createMD5();
         md5.init();
-        postMessage({
-          label: WorkerLabelsEnum.INIT_DONE,
-        });
-        break;
-      case WorkerLabelsEnum.DOING:
         (data as ArrayBuffer[]).forEach(buffer => {
           console.log(WorkerLabelsEnum.DOING);
           md5.update(new Uint8Array(buffer));

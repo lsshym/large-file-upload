@@ -4,6 +4,7 @@ export enum WorkerLabelsEnum {
   DOING = 'DOING',
   DONE = 'DONE',
   ERROR = 'ERROR',
+  TEST = 'TEST',
 }
 
 export type WorkerMessage = {
