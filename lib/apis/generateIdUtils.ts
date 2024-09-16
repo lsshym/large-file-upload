@@ -1,3 +1,4 @@
+import { createMD5 } from 'hash-wasm';
 import { currentFileChunks, FileChunkResult } from './currentFileChunks';
 import { WorkerLabelsEnum, WorkerMessage } from './worker/worker.enum';
 
@@ -147,7 +148,6 @@ export function generateFileHashBlake3(file: Blob): Promise<string> {
   return new Promise((resolve, reject) => {
     try {
       // 如何开多个worker加速计算，
-
       const worker = new Worker(new URL('./worker/blake3.worker.ts', import.meta.url), {
         type: 'module',
       });
@@ -196,16 +196,83 @@ export function generateFileHashBlake3(file: Blob): Promise<string> {
   });
 }
 
-// function getFileChunksGroup<T>(fileChunks: T[], size: number = 2) {
-//   const vaule: T[][] = [];
-//   const buf: T[] = [];
+export function generateFileHashWorkers(
+  file: File,
+  customChunkSize?: number,
+): Promise<FileHashResult> {
+  return currentFileChunks(file, customChunkSize)
+    .then(async ({ fileChunks, chunkSize }: FileChunkResult) => {
+      //如果避免内存占用过多，添加一点到woker，然后释放资源
+      const arrayBuffers = await Promise.all(fileChunks.map(chunk => chunk.arrayBuffer()));
+      const value = await generateFileHashWithArrayBufferTest(arrayBuffers);
+
+      return {
+        hash: value,
+        chunkSize,
+      };
+    })
+    .catch(error => {
+      throw new Error(`Failed to generate file hash: ${error}`);
+    });
+}
+
+export function generateFileHashWithArrayBufferTest(arrayBuffers: ArrayBuffer[]): Promise<string> {
+  return new Promise((resolve, reject) => {
+    try {
+      // const { value } = getFileChunksGroup<ArrayBuffer>(arrayBuffers);
+      // console.log(value);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      let worker: any;
+      arrayBuffers.forEach(abfs => {
+        worker = new Worker(new URL('./worker/md5.workers.ts', import.meta.url), {
+          type: 'module',
+        });
+        worker.onmessage = (event: MessageEvent) => {
+          const { label, data }: WorkerMessage = event.data;
+
+          switch (label) {
+            case WorkerLabelsEnum.DONE:
+              resolve(data as string);
+              worker.terminate(); // 在任务完成后终止Worker
+              break;
+
+            default:
+              reject(new Error(`Unexpected message label received: ${label}, data: ${data}`));
+              worker.terminate(); // 未预期的消息也终止Worker
+              break;
+          }
+        };
+        worker.postMessage(
+          {
+            label: WorkerLabelsEnum.DOING,
+            data: abfs,
+          },
+          [abfs],
+        );
+      });
+
+      worker.postMessage({
+        label: WorkerLabelsEnum.TEST,
+      });
+    } catch (error) {
+      reject(new Error(`Failed to generate file hash with array buffer: ${error}`));
+    }
+  });
+}
+
+
+// function getFileChunksGroup<T>(fileChunks: T[], size: number = 5) {
+//   const value: T[][] = [];
+//   let buf: T[] = [];
+
 //   fileChunks.forEach((chunk: T) => {
 //     buf.push(chunk);
 //     if (buf.length === size) {
-//       vaule.push(buf);
-//       buf.length = 0;
+//       value.push(chunk); // 使用 buf.slice() 推入副本
+//       buf = [];
 //     }
 //   });
-//   if (buf.length !== 0) vaule.push(buf);
-//   return vaule;
+
+//   if (buf.length !== 0) value.push(buf.slice()); // 最后推入剩余的副本
+//   return { value, size };
 // }
