@@ -111,10 +111,8 @@ export function generateFileHashWithArrayBuffer(arrayBuffers: ArrayBuffer[]): Pr
         switch (label) {
           case WorkerLabelsEnum.DONE:
             console.log('data: ${data}', data);
-            calculateMD5(data).then(hash => {
-              resolve(hash);
-            });
-            // resolve(data as string);
+ 
+            resolve(data as string);
             worker.terminate(); // 在任务完成后终止Worker
             break;
 
