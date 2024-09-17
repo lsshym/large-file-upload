@@ -18,7 +18,7 @@ addEventListener('message', async (event: MessageEvent) => {
         });
         postMessage({
           label: WorkerLabelsEnum.DONE,
-          data: md5.digest('hex'),
+          data: md5.digest('binary'),
         });
         break;
     }

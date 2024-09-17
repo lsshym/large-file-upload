@@ -1,3 +1,4 @@
+import { createMD5 } from 'hash-wasm';
 import { currentFileChunks, FileChunkResult } from './currentFileChunks';
 import { WorkerLabelsEnum, WorkerMessage } from './worker/worker.enum';
 
@@ -109,7 +110,11 @@ export function generateFileHashWithArrayBuffer(arrayBuffers: ArrayBuffer[]): Pr
 
         switch (label) {
           case WorkerLabelsEnum.DONE:
-            resolve(data as string);
+            console.log('data: ${data}', data);
+            calculateMD5(data).then(hash => {
+              resolve(hash);
+            });
+            // resolve(data as string);
             worker.terminate(); // 在任务完成后终止Worker
             break;
 
@@ -136,4 +141,131 @@ export function generateFileHashWithArrayBuffer(arrayBuffers: ArrayBuffer[]): Pr
       reject(new Error(`Failed to generate file hash with array buffer: ${error}`));
     }
   });
+}
+
+export function generateFileHashTest(
+  file: File,
+  customChunkSize?: number,
+): Promise<FileHashResult> {
+  return currentFileChunks(file, customChunkSize)
+    .then(async ({ fileChunks, chunkSize }: FileChunkResult) => {
+      //如果避免内存占用过多，添加一点到woker，然后释放资源
+      const arrayBuffers = await Promise.all(fileChunks.map(chunk => chunk.arrayBuffer()));
+      const value = await generateFileHashWithArrayBufferTest(arrayBuffers);
+
+      return {
+        hash: value,
+        chunkSize,
+      };
+    })
+    .catch(error => {
+      throw new Error(`Failed to generate file hash: ${error}`);
+    });
+}
+
+/**
+ * 使用 Web Worker 并行计算文件哈希。
+ *
+ * @param {ArrayBuffer[]} arrayBuffers - 文件数据块组成的数组。
+ * @returns {Promise<string>} - 返回计算的文件哈希值。
+ */
+export function generateFileHashWithArrayBufferTest(arrayBuffers: ArrayBuffer[]): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const workerCount = 1; // 假设使用 4 个 worker
+    const chunkSize = Math.ceil(arrayBuffers.length / workerCount);
+    const workers: Worker[] = [];
+    const chunks: { index: number; buffer: Uint8Array }[] = []; // 每个块添加 index 以保证顺序
+    let completedWorkers = 0;
+
+    try {
+      for (let i = 0; i < workerCount; i++) {
+        const worker = new Worker(new URL('./worker/md5.worker.test.ts', import.meta.url), {
+          type: 'module',
+        });
+        workers.push(worker);
+
+        worker.onmessage = (event: MessageEvent) => {
+          const {
+            label,
+            data,
+            index,
+          }: { label: WorkerLabelsEnum; data: Uint8Array; index: number } = event.data;
+
+          switch (label) {
+            case WorkerLabelsEnum.DONE:
+              chunks.push({ index, buffer: data }); // 保存带有索引的数据块
+              completedWorkers++;
+
+              if (completedWorkers === workerCount) {
+                // 确保按照 index 对数据块排序后合并
+                console.log(chunks)
+                const sortedChunks = chunks.sort((a, b) => a.index - b.index);
+                const combinedBuffer = mergeChunks(sortedChunks.map(c => c.buffer));
+                console.log('datatest: ${datatest}', data);
+                calculateMD5(combinedBuffer).then(hash => {
+                  resolve(hash);
+                });
+              }
+
+              worker.terminate();
+              break;
+
+            default:
+              reject(new Error(`Unexpected message label received: ${label}`));
+              worker.terminate();
+              break;
+          }
+        };
+
+        worker.onerror = error => {
+          reject(new Error(`Worker error: ${error.message}`));
+          worker.terminate();
+        };
+
+        // 每个 worker 处理文件的部分块，并附带块的索引值
+        const start = i * chunkSize;
+        const chunk = arrayBuffers.slice(start, start + chunkSize);
+        console.log(chunk);
+        worker.postMessage(
+          {
+            label: WorkerLabelsEnum.INIT,
+            data: chunk,
+            index: i, // 将索引传递给 worker
+          },
+          chunk,
+        );
+      }
+    } catch (error) {
+      reject(new Error(`Failed to generate file hash with array buffer: ${error}`));
+    }
+  });
+}
+
+/**
+ * 合并所有块的数据。
+ *
+ * @param {Uint8Array[]} chunks - 每个块的数据。
+ * @returns {Uint8Array} - 合并后的完整文件数据。
+ */
+function mergeChunks(chunks: Uint8Array[]): Uint8Array {
+  const totalLength = chunks.reduce((acc, chunk) => acc + chunk.length, 0);
+  const combined = new Uint8Array(totalLength);
+  let offset = 0;
+  for (const chunk of chunks) {
+    combined.set(chunk, offset);
+    offset += chunk.length;
+  }
+  return combined;
+}
+
+/**
+ * 使用 MD5 对合并后的文件数据进行全局哈希计算。
+ *
+ * @param {Uint8Array} data - 完整的文件数据。
+ * @returns {string} - 返回计算的 MD5 哈希值。
+ */
+async function calculateMD5(data: Uint8Array): Promise<string> {
+  const md5 = await createMD5(); // 使用 await 等待 Promise resolve
+  md5.update(data); // 调用 update 方法
+  return md5.digest('hex'); // 计算并返回 MD5 哈希值
 }

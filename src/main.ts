@@ -1,4 +1,4 @@
-// import { generateFileHashWorkers } from '../lib/apis/generateIdUtils';
+import { generateFileHashTest } from '../lib/apis/generateIdUtils';
 import {
   currentFileChunks,
   generateFileHash,
@@ -33,7 +33,7 @@ fileInput.addEventListener('change', async event => {
 
     // md5耗时，单线程
     startTimer(generateFileHash, file);
-    // startTimer(generateFileHashWorkers, file);
+    startTimer(generateFileHashTest, file);
 
     return;
    
