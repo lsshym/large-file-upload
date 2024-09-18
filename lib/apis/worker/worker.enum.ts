@@ -1,5 +1,3 @@
-import { IHasher } from "hash-wasm/dist/lib/WASMInterface";
-
 export enum WorkerLabelsEnum {
   INIT = 'INIT',
   INIT_DONE = 'INIT_DONE',
@@ -12,6 +10,4 @@ export enum WorkerLabelsEnum {
 export type WorkerMessage = {
   label: WorkerLabelsEnum;
   data: ArrayBuffer[] | string;
-  md5?: IHasher;
-
 };
