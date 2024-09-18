@@ -1,5 +1,6 @@
+import { createMD5 } from 'hash-wasm';
 import { currentFileChunks, FileChunkResult } from './currentFileChunks';
-import { WorkerLabelsEnum, WorkerMessage } from './worker/worker.enum';
+import { WorkerLabelsEnum } from './worker/worker.enum';
 
 /**
  * Generate a Universally Unique Identifier (UUID) version 4.
@@ -31,7 +32,7 @@ export function generateUUID() {
       .join('');
   } else {
     // 如果不支持crypto API，则回退到Math.random生成UUID
-    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
       const r = (Math.random() * 16) | 0;
       const v = c === 'x' ? r : (r & 0x3) | 0x8;
       return v.toString(16);
@@ -48,34 +49,35 @@ export function generateUUID() {
  * @param {Record<string, any>} [extraParams={}] - Optional extra parameters object, which will be included in the hash computation along with the file content.
  * @returns {Promise<string>} - Returns a Promise that resolves to the hash value.
  */
-export async function generateSmallFileHash(file: File) {
-  const fileContentArrayBuffer = await file.arrayBuffer();
-  // Encode extra parameters
-  const combinedData: Uint8Array = new Uint8Array(fileContentArrayBuffer);
+// export async function generateSmallFileHash(file: File) {
+//   const fileContentArrayBuffer = await file.arrayBuffer();
+//   // Encode extra parameters
+//   const combinedData: Uint8Array = new Uint8Array(fileContentArrayBuffer);
 
-  // Generate SHA-256 hash
-  const hashBuffer = await crypto.subtle.digest('SHA-256', combinedData);
+//   // Generate SHA-256 hash
+//   const hashBuffer = await crypto.subtle.digest('SHA-256', combinedData);
 
-  const hashArray = Array.from(new Uint8Array(hashBuffer));
+//   const hashArray = Array.from(new Uint8Array(hashBuffer));
 
-  return hashArray.map((b) => b.toString(16).padStart(2, '0')).join('');
-}
+//   return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+// }
 
 export interface FileHashResult {
   hash: string;
   chunkSize: number;
 }
 /**
- * Generates a hash for the given file.
+ * Generates a id for the given file.
  *
  * @param {File} file - The file for which to generate the hash.
  * @param {number} [customChunkSize] - Optional custom size for file chunks.
- * @returns {Promise<FileHashResult>} - A promise that resolves to an object containing the hash and chunk size.
+ * @returns {Promise<FileHashResult>} - A promise that resolves to an object containing the id and chunk size.
  */
 export function generateFileHash(file: File, customChunkSize?: number): Promise<FileHashResult> {
   return currentFileChunks(file, customChunkSize)
     .then(async ({ fileChunks, chunkSize }: FileChunkResult) => {
-      const arrayBuffers = await Promise.all(fileChunks.map((chunk) => chunk.arrayBuffer()));
+      //如果避免内存占用过多，添加一点到woker，然后释放资源
+      const arrayBuffers = await Promise.all(fileChunks.map(chunk => chunk.arrayBuffer()));
       const value = await generateFileHashWithArrayBuffer(arrayBuffers);
 
       return {
@@ -83,57 +85,139 @@ export function generateFileHash(file: File, customChunkSize?: number): Promise<
         chunkSize,
       };
     })
-    .catch((error) => {
+    .catch(error => {
       throw new Error(`Failed to generate file hash: ${error}`);
     });
 }
+/**
+ * 使用 Web Worker 并行计算文件哈希。
+ *
+ * @param {ArrayBuffer[]} arrayBuffers - 文件数据块组成的数组。
+ * @returns {Promise<string>} - 返回计算的文件哈希值。
+ */
+function generateFileHashWithArrayBuffer(arrayBuffers: ArrayBuffer[]): Promise<string> {
+  return new Promise(async (resolve, reject) => {
+    const workerCount = 4; // 使用 4 个 worker
+    const chunkSize = Math.ceil(arrayBuffers.length / workerCount);
+    const workers: Worker[] = [];
+    const partialHashes: { index: number; hashState: Uint8Array }[] = [];
+    let completedWorkers = 0;
 
+    try {
+      // 创建主线程的 MD5 对象，用于合并所有中间状态
+
+      for (let i = 0; i < workerCount; i++) {
+        const worker = new Worker(new URL('./worker/md5.workers.ts', import.meta.url), {
+          type: 'module',
+        });
+        workers.push(worker);
+
+        worker.onmessage = (event: MessageEvent) => {
+          const { label, data, index } = event.data;
+
+          switch (label) {
+            case WorkerLabelsEnum.DONE:
+              // 保存每个块的 MD5 中间状态
+              partialHashes.push({ index, hashState: new Uint8Array(data) });
+              completedWorkers++;
+
+              if (completedWorkers === workerCount) {
+                // 按照块的顺序合并所有 MD5 的中间状态
+                const results = partialHashes
+                  .sort((a, b) => a.index - b.index)
+                  .map(({ hashState }) => hashState);
+                const totalLength = results.reduce((acc, arr) => acc + arr.length, 0);
+                const mergedArray = new Uint8Array(totalLength);
+
+                let offset = 0;
+                for (const arr of results) {
+                  mergedArray.set(arr, offset);
+                  offset += arr.length;
+                }
+
+                // 使用 MD5 生成哈希值
+                createMD5().then(md5 => {
+                  md5.init();
+                  md5.update(mergedArray);
+                  resolve(md5.digest('hex'));
+                });
+              }
+              worker.terminate();
+              break;
+
+            default:
+              reject(new Error(`Unexpected message label received: ${label}`));
+              worker.terminate();
+              break;
+          }
+        };
+
+        worker.onerror = error => {
+          reject(new Error(`Worker error: ${error.message}`));
+          worker.terminate();
+        };
+
+        // 将每个文件块分配给 Worker，并附带块的索引值
+        const start = i * chunkSize;
+        const chunk = arrayBuffers.slice(start, start + chunkSize);
+        worker.postMessage({
+          label: WorkerLabelsEnum.INIT,
+          data: chunk,
+          index: i, // 将索引传递给 Worker
+        });
+      }
+    } catch (error) {
+      reject(new Error(`Failed to generate file hash with array buffer: ${error}`));
+    }
+  });
+}
 /**
  * Generates a hash using an array of ArrayBuffers.
  *
  * @param {ArrayBuffer[]} arrayBuffers - An array of ArrayBuffer objects containing file data chunks.
  * @returns {Promise<string>} - A promise that resolves to the generated hash as a string.
  */
-export function generateFileHashWithArrayBuffer(arrayBuffers: ArrayBuffer[]): Promise<string> {
-  return new Promise((resolve, reject) => {
-    try {
-      // 创建一个Worker实例
-      const worker = new Worker(new URL('./worker/md5.worker.ts', import.meta.url), {
-        type: 'module',
-      });
+// export function generateFileHashWithArrayBuffer(arrayBuffers: ArrayBuffer[]): Promise<string> {
+//   return new Promise((resolve, reject) => {
+//     try {
+//       // 如何开多个worker加速计算，
+//       const worker = new Worker(new URL('./worker/md5.worker.ts', import.meta.url), {
+//         type: 'module',
+//       });
 
-      // 监听Worker的消息事件
-      worker.onmessage = (event: MessageEvent) => {
-        const { label, data }: WorkerMessage = event.data;
+//       // 监听Worker的消息事件
+//       worker.onmessage = (event: MessageEvent) => {
+//         const { label, data }: WorkerMessage = event.data;
 
-        if (label === WorkerLabelsEnum.DONE) {
-          resolve(data as string);
-          worker.terminate(); // 在任务完成后终止Worker
-        } else if (label === WorkerLabelsEnum.ERROR) {
-          reject(new Error(`Worker error: ${data}`));
-          worker.terminate(); // 发生错误时也终止Worker
-        } else {
-          reject(new Error(`Unexpected message label received: ${label}`));
-          worker.terminate();
-        }
-      };
+//         switch (label) {
+//           case WorkerLabelsEnum.DONE:
+//             console.log('data: ${data}', data);
 
-      // 处理Worker的错误事件
-      worker.onerror = (error) => {
-        reject(new Error(`Worker error: ${error.message}`));
-        worker.terminate(); // 在发生错误时终止Worker
-      };
+//             resolve(data as string);
+//             worker.terminate(); // 在任务完成后终止Worker
+//             break;
 
-      // 向Worker发送消息并传递ArrayBuffer
-      worker.postMessage(
-        {
-          label: WorkerLabelsEnum.INIT,
-          data: arrayBuffers,
-        },
-        arrayBuffers,
-      );
-    } catch (error) {
-      reject(new Error(`Failed to generate file hash with array buffer: ${error}`));
-    }
-  });
-}
+//           default:
+//             reject(new Error(`Unexpected message label received: ${label}, data: ${data}`));
+//             worker.terminate(); // 未预期的消息也终止Worker
+//             break;
+//         }
+//       };
+//       // 处理Worker的错误事件
+//       worker.onerror = error => {
+//         reject(new Error(`Worker error: ${error.message}`));
+//         worker.terminate(); // 在发生错误时终止Worker
+//       };
+
+//       worker.postMessage(
+//         {
+//           label: WorkerLabelsEnum.INIT,
+//           data: arrayBuffers,
+//         },
+//         arrayBuffers,
+//       );
+//     } catch (error) {
+//       reject(new Error(`Failed to generate file hash with array buffer: ${error}`));
+//     }
+//   });
+// }

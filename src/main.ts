@@ -1,7 +1,6 @@
 import {
   currentFileChunks,
   generateFileHash,
-  generateFileHashWithArrayBuffer,
   generateUUID,
   PromisePool,
   uploadChunksWithPool,
@@ -13,6 +12,14 @@ document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
     <input type="file" id="fileInput" />
   </div>
 `;
+// 计时器函数
+async function startTimer(cb: Function, file: File) {
+  console.time(`${cb.name} time`);
+  const { hash: hashId } = await cb(file);
+  console.log('aborted', hashId, file.size / 1024 / 1024 / 1024);
+  console.timeEnd(`${cb.name} time`);
+  return hashId;
+}
 // 监听文件上传事件
 const fileInput = document.getElementById('fileInput') as HTMLInputElement;
 fileInput.addEventListener('change', async event => {
@@ -20,68 +27,21 @@ fileInput.addEventListener('change', async event => {
   const file = input.files?.[0] || null;
   if (file) {
     // 创建文件切片，返回一个切片数组和每个切片的大小
-    const { fileChunks, chunkSize } = await currentFileChunks(file);
+    // const { fileChunks, chunkSize } = await currentFileChunks(file);
 
-    console.time('generateFileHashWithCrypto');
-    const { hash: hashId } = await generateFileHash(file);
-    // const value = await generateSmallFileHash(file);
+    // md5耗时，单线程
+//     data: ${data} 8e6c4fe2ffc51ea7d2d5b0f5d6f72126
+// main.ts:21 aborted 8e6c4fe2ffc51ea7d2d5b0f5d6f72126 1.1640969309955835
+// main.ts:22 generateFileHash time: 5981.971923828125 ms
+    startTimer(generateFileHash, file);
+//     main.ts:21 aborted d5c10a80858819ae82c5cdbcca6a0293 1.1640969309955835
+// main.ts:22 generateFileHashTest time: 3366.786865234375 ms
+    // startTimer(generateFileHashTest, file);
+//     main.ts:21 aborted df6372c8e2408ec769db6f0ad422f0d17230da6558402447c1fd9098b581db37 1.1640969309955835
+// main.ts:22 generateFileHashBlake3 time: 6564.705810546875 ms
+    // startTimer(generateFileHashBlake3, file);
 
-    console.log('aborted', hashId);
-    console.timeEnd('generateFileHashWithCrypto');
-    // const hashId = await generateFileHashWithCrypto(file);
-    // const id = setInterval(() => {
-    //   console.log(Math.random());
-    // }, 0);
-    // clearInterval(id);
     return;
-    // console.log("hashId", hashId);
-    const pool = uploadChunksWithPool({ fileChunks }, (chunk, index) => {
-      const fd = new FormData();
-      fd.append('fileHash', hashId);
-      fd.append('chunkHash', `${hashId}-${index}`);
-      // fd.append('fileName', file.name);
-      fd.append('chunkFile', chunk);
-      return axios({
-        url: `api/upload`,
-        method: 'post',
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-        data: fd, // 确保上传的内容正确传递
-      });
-    });
-    // 可以获得已执行任务信息
-    // pool.status$.subscribe((status) => {
-    //   console.log(`当前任务: ${status.currentTask}`);
-    // });
-
-    // const task1 = () =>
-    //   new Promise((resolve) =>
-    //     setTimeout(() => resolve("Task 1 completed"), 1000)
-    //   );
-    // const task2 = () =>
-    //   new Promise((resolve) =>
-    //     setTimeout(() => resolve("Task 2 completed"), 2000)
-    //   );
-    // const task3 = () =>
-    //   new Promise((resolve) =>
-    //     setTimeout(() => resolve("Task 3 completed"), 1500)
-    //   );
-    // const task4 = () =>
-    //   new Promise((resolve) =>
-    //     setTimeout(() => resolve("Task 4 completed"), 500)
-    //   );
-    // const pool = new PromisePoolTest([task1, task2, task3, task4], 2);
-    // 开始任务
-    // console.log('6666666666666666666666666666666666')
-    pool.exec().then(values => {
-      // 任务完成后打印所以结果
-      console.log('All tasks completed!', values);
-    });
-    // console.log('777777777777777777777777')
-    // 暂停
-    // pool.pause();
-    // 重新开始
-    // pool.resume();
+   
   }
 });
