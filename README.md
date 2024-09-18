@@ -124,22 +124,6 @@ fileInput.addEventListener('change', event => {
 });
 ```
 
-### Example: Generating a UUID
-
-This example shows how to generate a UUID using the `generateUUID` function:
-
-```typescript
-import { generateUUID } from 'file-upload-tools';
-
-function generateUniqueIdentifier() {
-  const uuid = generateUUID();
-  console.log('Generated UUID:', uuid);
-}
-
-// Generate and log a UUID
-generateUniqueIdentifier();
-```
-
 ### Example: Generating a File Hash in Chunks
 
 This example shows how to generate a hash for a large file using the `generateFileHash` function, which processes the file in chunks:
@@ -162,6 +146,22 @@ fileInput.addEventListener('change', event => {
     hashLargeFile(file);
   }
 });
+```
+
+### Example: Generating a UUID
+
+This example shows how to generate a UUID using the `generateUUID` function:
+
+```typescript
+import { generateUUID } from 'file-upload-tools';
+
+function generateUniqueIdentifier() {
+  const uuid = generateUUID();
+  console.log('Generated UUID:', uuid);
+}
+
+// Generate and log a UUID
+generateUniqueIdentifier();
 ```
 
 ### Example: Managing Concurrent Uploads with PromisePool
