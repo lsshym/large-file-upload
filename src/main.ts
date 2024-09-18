@@ -1,8 +1,6 @@
-import { generateFileHashTest } from '../lib/apis/generateIdUtils';
 import {
   currentFileChunks,
   generateFileHash,
-  generateFileHashWithArrayBuffer,
   generateUUID,
   PromisePool,
   uploadChunksWithPool,
@@ -32,8 +30,16 @@ fileInput.addEventListener('change', async event => {
     // const { fileChunks, chunkSize } = await currentFileChunks(file);
 
     // md5耗时，单线程
+//     data: ${data} 8e6c4fe2ffc51ea7d2d5b0f5d6f72126
+// main.ts:21 aborted 8e6c4fe2ffc51ea7d2d5b0f5d6f72126 1.1640969309955835
+// main.ts:22 generateFileHash time: 5981.971923828125 ms
     startTimer(generateFileHash, file);
-    startTimer(generateFileHashTest, file);
+//     main.ts:21 aborted d5c10a80858819ae82c5cdbcca6a0293 1.1640969309955835
+// main.ts:22 generateFileHashTest time: 3366.786865234375 ms
+    // startTimer(generateFileHashTest, file);
+//     main.ts:21 aborted df6372c8e2408ec769db6f0ad422f0d17230da6558402447c1fd9098b581db37 1.1640969309955835
+// main.ts:22 generateFileHashBlake3 time: 6564.705810546875 ms
+    // startTimer(generateFileHashBlake3, file);
 
     return;
    

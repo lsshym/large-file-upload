@@ -9,7 +9,6 @@ file-upload-tools is a powerful and flexible library designed to handle the spli
   - [currentFileChunks](#currentfilechunks)
   - [generateUUID](#generateuuid)
   - [generateFileHash](#generatefilehash)
-  - [generateFileHashWithArrayBuffer](#generatefilehashwitharraybuffer)
   - [PromisePool](#promisepool)
   - [uploadChunksWithPool](#uploadchunkswithpool)
 - [Examples](#examples)
@@ -55,18 +54,6 @@ Calculate the hash of the given file using MD5.
 **Returns**:
 
 - `Promise<{ hash: string, chunkSize: number }>` - A promise that resolves to an object containing the hash and chunk size.
-
-### `generateFileHashWithArrayBuffer`
-
-Generates a hash using an array of ArrayBuffers.
-
-**Parameters**:
-
-- `arrayBuffers: ArrayBuffer[]` - An array of ArrayBuffer objects containing file data chunks.
-
-**Returns**:
-
-- `Promise<string>` - A promise that resolves to the generated hash as a string.
 
 ### `generateUUID`
 
@@ -213,37 +200,6 @@ fileInput.addEventListener('change', event => {
   const file = (event.target as HTMLInputElement).files[0];
   if (file) {
     uploadFile(file);
-  }
-});
-```
-
-### Example: Generating a File Hash with ArrayBuffer
-
-This example demonstrates how to use the `generateFileHashWithArrayBuffer` function to generate a hash for a file using an array of ArrayBuffers and a Web Worker.
-
-```typescript
-import { generateFileHashWithArrayBuffer } from './generateFileHashWithArrayBuffer';
-
-async function handleFileInput(file: File) {
-  const arrayBuffers = [];
-  const chunkSize = 1024 * 1024; // 1 MB chunks
-  const fileReader = new FileReader();
-
-  for (let offset = 0; offset < file.size; offset += chunkSize) {
-    const blob = file.slice(offset, offset + chunkSize);
-    const arrayBuffer = await blob.arrayBuffer();
-    arrayBuffers.push(arrayBuffer);
-  }
-
-  const hash = await generateFileHashWithArrayBuffer(arrayBuffers);
-  console.log('Generated File Hash:', hash);
-}
-
-const fileInput = document.querySelector('input[type="file"]');
-fileInput.addEventListener('change', event => {
-  const file = (event.target as HTMLInputElement).files[0];
-  if (file) {
-    handleFileInput(file);
   }
 });
 ```
