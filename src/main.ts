@@ -13,11 +13,11 @@ document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
   </div>
 `;
 // 计时器函数
-async function startTimer(cb: Function, file: File) {
-  console.time(`${cb.name} time`);
-  const { hash: hashId } = await cb(file);
+async function startTimer(cb: Function, file: File, workerCount: number) {
+  console.time(`${cb.name} time ${workerCount}`);
+  const { hash: hashId } = await cb(file, workerCount);
   console.log('aborted', hashId, file.size / 1024 / 1024 / 1024);
-  console.timeEnd(`${cb.name} time`);
+  console.timeEnd(`${cb.name} time ${workerCount}`);
   return hashId;
 }
 // 监听文件上传事件
@@ -28,20 +28,14 @@ fileInput.addEventListener('change', async event => {
   if (file) {
     // 创建文件切片，返回一个切片数组和每个切片的大小
     // const { fileChunks, chunkSize } = await currentFileChunks(file);
+    console.log('begin');
 
-    // md5耗时，单线程
-//     data: ${data} 8e6c4fe2ffc51ea7d2d5b0f5d6f72126
-// main.ts:21 aborted 8e6c4fe2ffc51ea7d2d5b0f5d6f72126 1.1640969309955835
-// main.ts:22 generateFileHash time: 5981.971923828125 ms
-    startTimer(generateFileHash, file);
-//     main.ts:21 aborted d5c10a80858819ae82c5cdbcca6a0293 1.1640969309955835
-// main.ts:22 generateFileHashTest time: 3366.786865234375 ms
-    // startTimer(generateFileHashTest, file);
-//     main.ts:21 aborted df6372c8e2408ec769db6f0ad422f0d17230da6558402447c1fd9098b581db37 1.1640969309955835
-// main.ts:22 generateFileHashBlake3 time: 6564.705810546875 ms
-    // startTimer(generateFileHashBlake3, file);
+    for (let i = 4; i < 20; i++) {
+      await startTimer(generateFileHash, file, i);
+      await startTimer(generateFileHash, file, i);
+      await startTimer(generateFileHash, file, i);
+    }
 
     return;
-   
   }
 });

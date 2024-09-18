@@ -39,28 +39,6 @@ export function generateUUID() {
   }
 }
 
-/**
- * This func seems redundant.
- * Generates a SHA-256 hash for small files (Maximum not exceeding 2GB).
- * Generates a unique hash identifier for the file using Crypto, based on the file content and optional extra parameters.
- *
- * @param {File} file - The file object for which to generate the hash.
- * @param {Record<string, any>} [extraParams={}] - Optional extra parameters object, which will be included in the hash computation along with the file content.
- * @returns {Promise<string>} - Returns a Promise that resolves to the hash value.
- */
-// export async function generateSmallFileHash(file: File) {
-//   const fileContentArrayBuffer = await file.arrayBuffer();
-//   // Encode extra parameters
-//   const combinedData: Uint8Array = new Uint8Array(fileContentArrayBuffer);
-
-//   // Generate SHA-256 hash
-//   const hashBuffer = await crypto.subtle.digest('SHA-256', combinedData);
-
-//   const hashArray = Array.from(new Uint8Array(hashBuffer));
-
-//   return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-// }
-
 export interface FileHashResult {
   hash: string;
   chunkSize: number;
@@ -88,15 +66,10 @@ export function generateFileHash(file: File, customChunkSize?: number): Promise<
       throw new Error(`Failed to generate file hash: ${error}`);
     });
 }
-/**
- * 使用 Web Worker 并行计算文件哈希。
- *
- * @param {ArrayBuffer[]} arrayBuffers - 文件数据块组成的数组。
- * @returns {Promise<string>} - 返回计算的文件哈希值。
- */
+
 function generateFileHashWithArrayBuffer(arrayBuffers: ArrayBuffer[]): Promise<string> {
-  return new Promise(async (resolve, reject) => {
-    const workerCount = 4; // 使用 4 个 worker
+  return new Promise((resolve, reject) => {
+    const workerCount = 6; // 测试后使用6个最佳
     const chunkSize = Math.ceil(arrayBuffers.length / workerCount);
     const workers: Worker[] = [];
     const partialHashes: { index: number; hashState: string }[] = [];
@@ -104,13 +77,11 @@ function generateFileHashWithArrayBuffer(arrayBuffers: ArrayBuffer[]): Promise<s
 
     try {
       // 创建主线程的 MD5 对象，用于合并所有中间状态
-
       for (let i = 0; i < workerCount; i++) {
         const worker = new Worker(new URL('./worker/md5.workers.ts', import.meta.url), {
           type: 'module',
         });
         workers.push(worker);
-
         worker.onmessage = (event: MessageEvent) => {
           const { label, data, index } = event.data;
 
@@ -143,15 +114,17 @@ function generateFileHashWithArrayBuffer(arrayBuffers: ArrayBuffer[]): Promise<s
           reject(new Error(`Worker error: ${error.message}`));
           worker.terminate();
         };
-
         // 将每个文件块分配给 Worker，并附带块的索引值
         const start = i * chunkSize;
         const chunk = arrayBuffers.slice(start, start + chunkSize);
-        worker.postMessage({
-          label: WorkerLabelsEnum.INIT,
-          data: chunk,
-          index: i, // 将索引传递给 Worker
-        });
+        worker.postMessage(
+          {
+            label: WorkerLabelsEnum.INIT,
+            data: chunk,
+            index: i, // 将索引传递给 Worker
+          },
+          chunk,
+        );
       }
     } catch (error) {
       reject(new Error(`Failed to generate file hash with array buffer: ${error}`));
@@ -168,54 +141,3 @@ async function hashConcat(strings: string[]): Promise<string> {
 
   return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
 }
-
-/**
- * Generates a hash using an array of ArrayBuffers.
- *
- * @param {ArrayBuffer[]} arrayBuffers - An array of ArrayBuffer objects containing file data chunks.
- * @returns {Promise<string>} - A promise that resolves to the generated hash as a string.
- */
-// export function generateFileHashWithArrayBuffer(arrayBuffers: ArrayBuffer[]): Promise<string> {
-//   return new Promise((resolve, reject) => {
-//     try {
-//       // 如何开多个worker加速计算，
-//       const worker = new Worker(new URL('./worker/md5.worker.ts', import.meta.url), {
-//         type: 'module',
-//       });
-
-//       // 监听Worker的消息事件
-//       worker.onmessage = (event: MessageEvent) => {
-//         const { label, data }: WorkerMessage = event.data;
-
-//         switch (label) {
-//           case WorkerLabelsEnum.DONE:
-//             console.log('data: ${data}', data);
-
-//             resolve(data as string);
-//             worker.terminate(); // 在任务完成后终止Worker
-//             break;
-
-//           default:
-//             reject(new Error(`Unexpected message label received: ${label}, data: ${data}`));
-//             worker.terminate(); // 未预期的消息也终止Worker
-//             break;
-//         }
-//       };
-//       // 处理Worker的错误事件
-//       worker.onerror = error => {
-//         reject(new Error(`Worker error: ${error.message}`));
-//         worker.terminate(); // 在发生错误时终止Worker
-//       };
-
-//       worker.postMessage(
-//         {
-//           label: WorkerLabelsEnum.INIT,
-//           data: arrayBuffers,
-//         },
-//         arrayBuffers,
-//       );
-//     } catch (error) {
-//       reject(new Error(`Failed to generate file hash with array buffer: ${error}`));
-//     }
-//   });
-// }
