@@ -7,6 +7,7 @@ addEventListener('message', async (event: MessageEvent) => {
   try {
     switch (label) {
       case WorkerLabelsEnum.INIT: {
+
         const md5 = await createMD5();
         md5.init();
 
@@ -16,7 +17,7 @@ addEventListener('message', async (event: MessageEvent) => {
         });
 
         // 生成增量 MD5 的中间状态并传回主线程
-        const partialHashState = md5.digest('binary'); // 返回中间的 MD5 状态
+        const partialHashState = md5.digest('hex'); // 返回中间的 MD5 状态
 
         postMessage({
           label: WorkerLabelsEnum.DONE,
