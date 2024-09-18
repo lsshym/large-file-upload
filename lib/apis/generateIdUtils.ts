@@ -1,4 +1,3 @@
-import { createMD5 } from 'hash-wasm';
 import { currentFileChunks, FileChunkResult } from './currentFileChunks';
 import { WorkerLabelsEnum } from './worker/worker.enum';
 
@@ -100,7 +99,7 @@ function generateFileHashWithArrayBuffer(arrayBuffers: ArrayBuffer[]): Promise<s
     const workerCount = 4; // 使用 4 个 worker
     const chunkSize = Math.ceil(arrayBuffers.length / workerCount);
     const workers: Worker[] = [];
-    const partialHashes: { index: number; hashState: Uint8Array }[] = [];
+    const partialHashes: { index: number; hashState: string }[] = [];
     let completedWorkers = 0;
 
     try {
@@ -118,7 +117,7 @@ function generateFileHashWithArrayBuffer(arrayBuffers: ArrayBuffer[]): Promise<s
           switch (label) {
             case WorkerLabelsEnum.DONE:
               // 保存每个块的 MD5 中间状态
-              partialHashes.push({ index, hashState: new Uint8Array(data) });
+              partialHashes.push({ index, hashState: data });
               completedWorkers++;
 
               if (completedWorkers === workerCount) {
@@ -126,21 +125,9 @@ function generateFileHashWithArrayBuffer(arrayBuffers: ArrayBuffer[]): Promise<s
                 const results = partialHashes
                   .sort((a, b) => a.index - b.index)
                   .map(({ hashState }) => hashState);
-                const totalLength = results.reduce((acc, arr) => acc + arr.length, 0);
-                const mergedArray = new Uint8Array(totalLength);
-
-                let offset = 0;
-                for (const arr of results) {
-                  mergedArray.set(arr, offset);
-                  offset += arr.length;
-                }
-
-                // 使用 MD5 生成哈希值
-                createMD5().then(md5 => {
-                  md5.init();
-                  md5.update(mergedArray);
-                  resolve(md5.digest('hex'));
-                });
+                const finalHash = hashConcat(results);
+                // 调用 digestMessage 生成最终的 MD5 哈希
+                resolve(finalHash);
               }
               worker.terminate();
               break;
@@ -171,6 +158,17 @@ function generateFileHashWithArrayBuffer(arrayBuffers: ArrayBuffer[]): Promise<s
     }
   });
 }
+async function hashConcat(strings: string[]): Promise<string> {
+  const combinedString = strings.join('');
+  const encoder = new TextEncoder();
+  const data = encoder.encode(combinedString);
+
+  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+
+  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
 /**
  * Generates a hash using an array of ArrayBuffers.
  *
