@@ -50,23 +50,10 @@ export interface FileHashResult {
  * @returns {Promise<FileHashResult>} - A promise that resolves to an object containing the id and chunk size.
  */
 export function generateFileHash(file: File, customChunkSize?: number): Promise<FileHashResult> {
-  return currentFileChunks(file, customChunkSize)
-    .then(async ({ fileChunks, chunkSize }: FileChunkResult) => {
-      const value = await generateFileHashWithArrayBuffer(fileChunks);
-      return {
-        hash: value,
-        chunkSize,
-      };
-    })
-    .catch(error => {
-      throw new Error(`Failed to generate file hash: ${error}`);
-    });
-}
-
-function generateFileHashWithArrayBuffer(fileChunks: Blob[]): Promise<string> {
   return new Promise((resolve, reject) => {
+    const { fileChunks, chunkSize }: FileChunkResult = currentFileChunks(file, customChunkSize);
     const workerCount = Math.min(navigator.hardwareConcurrency || 4, 6);
-    const chunkSize = Math.ceil(fileChunks.length / workerCount);
+    const fileChunkSize = Math.ceil(fileChunks.length / workerCount);
     const workers: Worker[] = [];
     const partialHashes: string[] = [];
     let completedWorkers = 0;
@@ -85,8 +72,12 @@ function generateFileHashWithArrayBuffer(fileChunks: Blob[]): Promise<string> {
               partialHashes[index] = data;
               completedWorkers++;
               if (completedWorkers === workerCount) {
-                const finalHash = hashConcat(partialHashes);
-                resolve(finalHash);
+                hashConcat(partialHashes).then(finalHash => {
+                  resolve({
+                    hash: finalHash,
+                    chunkSize,
+                  });
+                });
               }
               worker.terminate();
               break;
@@ -102,8 +93,8 @@ function generateFileHashWithArrayBuffer(fileChunks: Blob[]): Promise<string> {
           reject(new Error(`Worker error: ${error.message}`));
           worker.terminate();
         };
-        const start = i * chunkSize;
-        const blobChunk = fileChunks.slice(start, start + chunkSize);
+        const start = i * fileChunkSize;
+        const blobChunk = fileChunks.slice(start, start + fileChunkSize);
         Promise.all(blobChunk.map(async blob => await blob.arrayBuffer())).then(arrayBuffers => {
           worker.postMessage(
             {
@@ -120,6 +111,7 @@ function generateFileHashWithArrayBuffer(fileChunks: Blob[]): Promise<string> {
     }
   });
 }
+
 async function hashConcat(hashes: string[]): Promise<string> {
   const data = new TextEncoder().encode(hashes.join(''));
   const buffer = await crypto.subtle.digest('SHA-256', data);
