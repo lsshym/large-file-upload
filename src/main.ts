@@ -5,7 +5,6 @@ import {
   PromisePool,
   uploadChunksWithPool,
 } from '../lib/main';
-import axios from 'axios';
 
 document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
   <div>

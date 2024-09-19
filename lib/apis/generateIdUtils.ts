@@ -1,6 +1,5 @@
 import { currentFileChunks, FileChunkResult } from './currentFileChunks';
 import { WorkerLabelsEnum } from './worker/worker.enum';
-
 /**
  * Generate a Universally Unique Identifier (UUID) version 4.
  * This function uses the crypto API of the browser to generate a secure random number,
@@ -69,14 +68,13 @@ export function generateFileHash(file: File, customChunkSize?: number): Promise<
 
 function generateFileHashWithArrayBuffer(arrayBuffers: ArrayBuffer[]): Promise<string> {
   return new Promise((resolve, reject) => {
-    const workerCount = 6; // 测试后使用6个最佳
+    const workerCount = Math.min(navigator.hardwareConcurrency || 4, 6);
     const chunkSize = Math.ceil(arrayBuffers.length / workerCount);
     const workers: Worker[] = [];
-    const partialHashes: { index: number; hashState: string }[] = [];
+    const partialHashes: string[] = [];
     let completedWorkers = 0;
 
     try {
-      // 创建主线程的 MD5 对象，用于合并所有中间状态
       for (let i = 0; i < workerCount; i++) {
         const worker = new Worker(new URL('./worker/md5.workers.ts', import.meta.url), {
           type: 'module',
@@ -87,17 +85,10 @@ function generateFileHashWithArrayBuffer(arrayBuffers: ArrayBuffer[]): Promise<s
 
           switch (label) {
             case WorkerLabelsEnum.DONE:
-              // 保存每个块的 MD5 中间状态
-              partialHashes.push({ index, hashState: data });
+              partialHashes[index] = data;
               completedWorkers++;
-
               if (completedWorkers === workerCount) {
-                // 按照块的顺序合并所有 MD5 的中间状态
-                const results = partialHashes
-                  .sort((a, b) => a.index - b.index)
-                  .map(({ hashState }) => hashState);
-                const finalHash = hashConcat(results);
-                // 调用 digestMessage 生成最终的 MD5 哈希
+                const finalHash = hashConcat(partialHashes);
                 resolve(finalHash);
               }
               worker.terminate();
@@ -131,13 +122,10 @@ function generateFileHashWithArrayBuffer(arrayBuffers: ArrayBuffer[]): Promise<s
     }
   });
 }
-async function hashConcat(strings: string[]): Promise<string> {
-  const combinedString = strings.join('');
-  const encoder = new TextEncoder();
-  const data = encoder.encode(combinedString);
-
-  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-  const hashArray = Array.from(new Uint8Array(hashBuffer));
-
-  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+async function hashConcat(hashes: string[]): Promise<string> {
+  const data = new TextEncoder().encode(hashes.join(''));
+  const buffer = await crypto.subtle.digest('SHA-256', data);
+  const hashArray = Array.from(new Uint8Array(buffer));
+  const truncatedHashArray = hashArray.slice(0, 8); // 取前8个字节
+  return truncatedHashArray.map(b => b.toString(16).padStart(2, '0')).join('');
 }

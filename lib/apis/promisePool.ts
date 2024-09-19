@@ -37,7 +37,6 @@ export class PromisePool {
     // 初始化任务队列，将任务函数映射到其在结果数组中的索引
     this.queue = functions.map((fn, index) => ({ fn, index }));
     this.maxConcurrentTasks = maxConcurrentTasks;
-
     // 初始化任务状态发布
     this.status$.next({
       currentTask: this.currentTaskIndex,
@@ -55,7 +54,6 @@ export class PromisePool {
         if (!this.isPaused && count < this.maxConcurrentTasks && this.queue.length > 0) {
           const availableSlots = this.maxConcurrentTasks - count;
           const tasksToRun = this.queue.splice(0, availableSlots);
-
           this.currentRunningCount.next(count + tasksToRun.length);
 
           tasksToRun.forEach(({ fn, index }) => {
