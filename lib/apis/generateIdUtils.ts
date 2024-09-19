@@ -52,7 +52,7 @@ export interface FileHashResult {
 export function generateFileHash(file: File, customChunkSize?: number): Promise<FileHashResult> {
   return new Promise((resolve, reject) => {
     const { fileChunks, chunkSize }: FileChunkResult = currentFileChunks(file, customChunkSize);
-    const workerCount = Math.min(navigator.hardwareConcurrency || 4, 6);
+    const workerCount = 4;
     const fileChunkSize = Math.ceil(fileChunks.length / workerCount);
     const workers: Worker[] = [];
     const partialHashes: string[] = [];
@@ -116,6 +116,6 @@ async function hashConcat(hashes: string[]): Promise<string> {
   const data = new TextEncoder().encode(hashes.join(''));
   const buffer = await crypto.subtle.digest('SHA-256', data);
   const hashArray = Array.from(new Uint8Array(buffer));
-  const truncatedHashArray = hashArray.slice(0, 8); // 取前8个字节
+  const truncatedHashArray = hashArray.slice(0, 16); // 现在取前 16 个字节
   return truncatedHashArray.map(b => b.toString(16).padStart(2, '0')).join('');
 }
