@@ -12,7 +12,7 @@ document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
   </div>
 `;
 // 计时器函数
-async function startTimer(cb: Function, file: File, workerCount: number) {
+async function startTimer(cb: Function, file: File, workerCount?: number) {
   console.time(`${cb.name} time ${workerCount}`);
   const { hash: hashId } = await cb(file, workerCount);
   console.log('aborted', hashId, file.size / 1024 / 1024 / 1024);
@@ -29,11 +29,7 @@ fileInput.addEventListener('change', async event => {
     // const { fileChunks, chunkSize } = await currentFileChunks(file);
     console.log('begin');
 
-    for (let i = 4; i < 20; i++) {
-      await startTimer(generateFileHash, file, i);
-      await startTimer(generateFileHash, file, i);
-      await startTimer(generateFileHash, file, i);
-    }
+    startTimer(generateFileHash, file);
 
     return;
   }
