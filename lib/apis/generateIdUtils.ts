@@ -52,10 +52,7 @@ export interface FileHashResult {
 export function generateFileHash(file: File, customChunkSize?: number): Promise<FileHashResult> {
   return currentFileChunks(file, customChunkSize)
     .then(async ({ fileChunks, chunkSize }: FileChunkResult) => {
-      //如果避免内存占用过多，添加一点到woker，然后释放资源
-      const arrayBuffers = await Promise.all(fileChunks.map(chunk => chunk.arrayBuffer()));
-      const value = await generateFileHashWithArrayBuffer(arrayBuffers);
-
+      const value = await generateFileHashWithArrayBuffer(fileChunks);
       return {
         hash: value,
         chunkSize,
@@ -66,10 +63,10 @@ export function generateFileHash(file: File, customChunkSize?: number): Promise<
     });
 }
 
-function generateFileHashWithArrayBuffer(arrayBuffers: ArrayBuffer[]): Promise<string> {
+function generateFileHashWithArrayBuffer(fileChunks: Blob[]): Promise<string> {
   return new Promise((resolve, reject) => {
     const workerCount = Math.min(navigator.hardwareConcurrency || 4, 6);
-    const chunkSize = Math.ceil(arrayBuffers.length / workerCount);
+    const chunkSize = Math.ceil(fileChunks.length / workerCount);
     const workers: Worker[] = [];
     const partialHashes: string[] = [];
     let completedWorkers = 0;
@@ -105,17 +102,18 @@ function generateFileHashWithArrayBuffer(arrayBuffers: ArrayBuffer[]): Promise<s
           reject(new Error(`Worker error: ${error.message}`));
           worker.terminate();
         };
-        // 将每个文件块分配给 Worker，并附带块的索引值
         const start = i * chunkSize;
-        const chunk = arrayBuffers.slice(start, start + chunkSize);
-        worker.postMessage(
-          {
-            label: WorkerLabelsEnum.INIT,
-            data: chunk,
-            index: i, // 将索引传递给 Worker
-          },
-          chunk,
-        );
+        const blobChunk = fileChunks.slice(start, start + chunkSize);
+        Promise.all(blobChunk.map(async blob => await blob.arrayBuffer())).then(arrayBuffers => {
+          worker.postMessage(
+            {
+              label: WorkerLabelsEnum.INIT,
+              data: arrayBuffers,
+              index: i,
+            },
+            arrayBuffers,
+          );
+        });
       }
     } catch (error) {
       reject(new Error(`Failed to generate file hash with array buffer: ${error}`));
