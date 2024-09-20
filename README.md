@@ -7,7 +7,6 @@ file-upload-tools is a powerful and flexible library designed to handle the spli
 - [Installation](#installation)
 - [API Reference](#api-reference)
   - [currentFileChunks](#currentfilechunks)
-  - [generateUUID](#generateuuid)
   - [generateFileHash](#generatefilehash)
   - [PromisePool](#promisepool)
   - [uploadChunksWithPool](#uploadchunkswithpool)
@@ -54,14 +53,6 @@ Calculate the hash of the given file using MD5.
 **Returns**:
 
 - `Promise<{ hash: string, chunkSize: number }>` - A promise that resolves to an object containing the hash and chunk size.
-
-### `generateUUID`
-
-Generates a Universally Unique Identifier (UUID) version 4. If there is no need for fast file uploads, this function can be used. Compared to computing the hash, this method is much faster.
-
-**Returns**:
-
-- `string` - A string representing the generated UUID.
 
 ### `PromisePool`
 
@@ -146,22 +137,6 @@ fileInput.addEventListener('change', event => {
     hashLargeFile(file);
   }
 });
-```
-
-### Example: Generating a UUID
-
-This example shows how to generate a UUID using the `generateUUID` function:
-
-```typescript
-import { generateUUID } from 'file-upload-tools';
-
-function generateUniqueIdentifier() {
-  const uuid = generateUUID();
-  console.log('Generated UUID:', uuid);
-}
-
-// Generate and log a UUID
-generateUniqueIdentifier();
 ```
 
 ### Example: Managing Concurrent Uploads with PromisePool

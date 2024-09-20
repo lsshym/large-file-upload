@@ -6,11 +6,20 @@ export interface FileHashResult {
   chunkSize: number;
 }
 /**
- * Generates a id for the given file.
+ * Generates a hash for the given file by dividing it into chunks and processing them in parallel using Web Workers.
  *
- * @param {File} file - The file for which to generate the hash.
- * @param {number} [customChunkSize] - Optional custom size for file chunks.
- * @returns {Promise<FileHashResult>} - A promise that resolves to an object containing the id and chunk size.
+ * The function splits the file into chunks and utilizes multiple Web Workers to compute partial hashes concurrently,
+ * enhancing performance, especially for large files. It then combines these partial hashes to produce the final hash value.
+ * If `customChunkSize` is not provided or is invalid, a default chunk size is used.
+ *
+ * @param {File} file - The file to generate the hash for.
+ * @param {number} [customChunkSize] - Optional custom size for file chunks (in MB).
+ * If the value is less than 1 or not a valid number, the default size is set.
+ * If the value is not an integer, it is rounded down.
+ *
+ * @returns {Promise<FileHashResult>} A promise that resolves to an object containing:
+ * - `hash`: A string representing the final hash of the file.
+ * - `chunkSize`: The size of each chunk used during hashing (in MB).
  */
 export function generateFileHash(file: File, customChunkSize?: number): Promise<FileHashResult> {
   return new Promise((resolve, reject) => {
