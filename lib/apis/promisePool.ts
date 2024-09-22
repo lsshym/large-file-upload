@@ -1,7 +1,7 @@
 import { SimpleBehaviorSubject } from './simpleObservable';
 // 定义异步函数的类型
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-type AsyncFunction = (signal: AbortSignal) => Promise<any>;
+type AsyncFunction = (props: { signal: AbortSignal }) => Promise<any>;
 
 export class PromisePool {
   private queue: { fn: AsyncFunction; index: number }[] = [];
@@ -10,7 +10,7 @@ export class PromisePool {
   private currentRunningCount = new SimpleBehaviorSubject(0);
   private isPaused = false;
   private currentTaskIndex = 0;
-  private controllers: { [index: number]: AbortController } = {};
+  private controllers: { [index: number]: { fn: any; controller: AbortController } } = {};
 
   constructor(
     functions: AsyncFunction[],
@@ -37,10 +37,12 @@ export class PromisePool {
         ) {
           const { fn, index } = this.queue.shift()!;
           const controller = new AbortController();
-          this.controllers[index] = controller;
+          this.controllers[index] = { controller, fn, index };
           this.currentRunningCount.next(this.currentRunningCount.value + 1);
 
-          fn(controller.signal)
+          fn({
+            signal: controller.signal,
+          })
             .then(result => {
               this.results[index] = result;
             })
@@ -67,6 +69,14 @@ export class PromisePool {
 
   pause() {
     this.isPaused = true;
+
+    Object.values(this.controllers).forEach(({ controller, fn, index }) => {
+      console.log(controller, fn);
+      controller.abort();
+      this.queue.unshift({ fn, index });
+      this.controllers = {};
+      // this.currentRunningCount.next(0);
+    });
   }
 
   resume() {

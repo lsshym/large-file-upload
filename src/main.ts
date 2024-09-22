@@ -8,6 +8,8 @@ import axios from 'axios';
 document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
   <div>
     <input type="file" id="fileInput" />
+    <button id="pause">暂停</button>
+    <button id="resume">恢复</button>
   </div>
 `;
 // 计时器函数
@@ -20,6 +22,9 @@ async function startTimer(cb: Function, file: File, workerCount?: number) {
 }
 // 监听文件上传事件
 const fileInput = document.getElementById('fileInput') as HTMLInputElement;
+const btnPause = document.getElementById('pause') as HTMLInputElement;
+const btnresume = document.getElementById('resume') as HTMLInputElement;
+let testPool;
 fileInput.addEventListener('change', async event => {
   const input = event.target as HTMLInputElement;
   const file = input.files?.[0] || null;
@@ -28,8 +33,9 @@ fileInput.addEventListener('change', async event => {
     const { fileChunks, chunkSize } = currentFileChunks(file);
     // startTimer(generateFileHash, file);
     const hashId = '6666666666';
+    console.log(fileChunks.length)
     const arr = fileChunks.map((chunk, index) => {
-      async (signal: AbortSignal) => {
+      return async ({ signal }) => {
         const fd = new FormData();
         fd.append('fileHash', hashId);
         fd.append('chunkHash', `${hashId}-${index}`);
@@ -49,8 +55,7 @@ fileInput.addEventListener('change', async event => {
         return value;
       };
     });
-    const testPool = new PromisePool(arr);
-    console.log(testPool);
+    testPool = new PromisePool(arr);
     testPool.exec().then(value => {
       console.log(value);
       axios({
@@ -63,14 +68,10 @@ fileInput.addEventListener('change', async event => {
         },
       });
     });
-    setTimeout(() => {
-      testPool.pause(tasksToRun => {
-        tasksToRun.forEach(item => {
-          console.log(item);
-          item.controller.abort();
-        });
-      });
-    }, 1000);
+    // testPool.pause();
+
+    // setTimeout(() => {
+    // }, 1000);
     // console.log("hashId", hashId);
     // const pool = uploadChunksWithPool({ fileChunks }, (chunk, index) => {
     //   const fd = new FormData();
@@ -122,4 +123,10 @@ fileInput.addEventListener('change', async event => {
     // pool.resume();
     return;
   }
+});
+btnPause.addEventListener('click', () => {
+  testPool.pause();
+});
+btnresume.addEventListener('click', () => {
+  testPool.resume();
 });
