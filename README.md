@@ -7,16 +7,12 @@ file-upload-tools is a powerful and flexible library designed to handle the spli
 - [Installation](#installation)
 - [API Reference](#api-reference)
   - [currentFileChunks](#currentfilechunks)
-  - [generateUUID](#generateuuid)
   - [generateFileHash](#generatefilehash)
-  - [PromisePool](#promisepool)
-  - [uploadChunksWithPool](#uploadchunkswithpool)
+  - [UploadFileTool](#uploadfiletool)
 - [Examples](#examples)
   - [Example: Splitting and Uploading a File](#example-splitting-and-uploading-a-file)
-  - [Example: Generating a UUID](#example-generating-a-uuid)
   - [Example: Generating a File Hash in Chunks](#example-generating-a-file-hash-in-chunks)
-  - [Example: Managing Concurrent Uploads with PromisePool](#example-managing-concurrent-uploads-with-promisepool)
-  - [Example: Generating a File Hash with ArrayBuffer](#example-generating-a-file-hash-with-arraybuffer)
+  - [Example: Using UploadFileTool to Manage File Uploads](#example-using-uploadfiletool-to-manage-file-uploads)
 - [License](#license)
 
 ## Installation
@@ -55,43 +51,30 @@ Calculate the hash of the given file using MD5.
 
 - `Promise<{ hash: string, chunkSize: number }>` - A promise that resolves to an object containing the hash and chunk size.
 
-### `generateUUID`
+### `UploadFileTool`
 
-Generates a Universally Unique Identifier (UUID) version 4. If there is no need for fast file uploads, this function can be used. Compared to computing the hash, this method is much faster.
-
-**Returns**:
-
-- `string` - A string representing the generated UUID.
-
-### `PromisePool`
-
-Controls the execution of asynchronous tasks with a specified level of concurrency.
-
-**Constructor Parameters**:
-
-- `functions: AsyncFunction[]` - Array of task functions to be executed.
-- `maxConcurrentTasks: number` - Maximum number of concurrent tasks.
-
-**Methods**:
-
-- `exec<T>(): Promise<T[]>` - Executes all asynchronous functions in the task pool.
-- `pause(): void` - Pauses task execution.
-- `resume(): void` - Resumes task execution.
-- `clear(): void` - Clears the task queue.
-- `addTasks(newTasks: AsyncFunction[]): void` - Adds new tasks to the queue.
-
-### `uploadChunksWithPool`
-
-Controls the concurrent upload of file chunks using PromisePool.
+A utility class to manage and control the upload of file chunks with support for concurrency, pausing, resuming, and canceling uploads.
 
 **Parameters**:
 
-- `options: UploadOptions` - Configuration options for file upload.
-- `cb: UploadCallback` - Callback function to handle the upload of a single file chunk.
+- `functions: AsyncFunction<T>[]` - An array of async functions representing upload tasks.
+- `maxConcurrentTasks: number` - The maximum number of concurrent upload tasks. Defaults to the number of CPU cores.
+- `maxErrors: number` - The maximum allowed errors before aborting. Defaults to 10.
+
+**Methods**:
+
+- `exec(): Promise<T[]>` - Executes the upload tasks in the queue. 
+- `pause()`: Pauses the ongoing uploads.
+- `resume()`: Resumes the paused uploads.
+- `cancelAll()`: Cancels all ongoing and pending uploads.
+- `setIndexChangeListener(listener: (index: number) => void)`: Sets a listener to monitor the current task index.
+
+**Note**:
+You must use `await` to wait for the request to complete, otherwise the upload result cannot be obtained.
 
 **Returns**:
 
-- `PromisePool` - Returns the instance of PromisePool managing the upload tasks.
+- A promise that resolves to an array of results for each upload task.
 
 ## Examples
 
@@ -105,23 +88,12 @@ import { currentFileChunks } from 'file-upload-tools';
 async function splitFile(file: File) {
   // Split the file into chunks
   const { fileChunks, chunkSize } = await currentFileChunks(file);
-
   console.log('File has been split into the following chunks:');
   fileChunks.forEach((chunk, index) => {
     console.log(`Chunk ${index + 1} of size ${chunk.size} bytes`);
   });
-
   console.log('Chunk Size:', chunkSize);
 }
-
-// Example usage with a file input
-const fileInput = document.querySelector('input[type="file"]');
-fileInput.addEventListener('change', event => {
-  const file = (event.target as HTMLInputElement).files[0];
-  if (file) {
-    splitFile(file);
-  }
-});
 ```
 
 ### Example: Generating a File Hash in Chunks
@@ -137,71 +109,50 @@ async function hashLargeFile(file: File) {
   console.log('Generated hash for the large file:', hash);
   console.log('Chunk Size:', chunkSize);
 }
-
-// Example usage with a file input
-const fileInput = document.querySelector('input[type="file"]');
-fileInput.addEventListener('change', event => {
-  const file = (event.target as HTMLInputElement).files[0];
-  if (file) {
-    hashLargeFile(file);
-  }
-});
 ```
 
-### Example: Generating a UUID
+### Example: Using UploadFileTool to Manage File Uploads
 
-This example shows how to generate a UUID using the `generateUUID` function:
-
-```typescript
-import { generateUUID } from 'file-upload-tools';
-
-function generateUniqueIdentifier() {
-  const uuid = generateUUID();
-  console.log('Generated UUID:', uuid);
-}
-
-// Generate and log a UUID
-generateUniqueIdentifier();
-```
-
-### Example: Managing Concurrent Uploads with PromisePool
-
-This example demonstrates how to use the `uploadChunksWithPool` function to manage the concurrent upload of file chunks:
+This example demonstrates how to use the `UploadFileTool` to manage and control the upload of file chunks:
 
 ```typescript
-import { currentFileChunks, uploadChunksWithPool } from 'file-upload-tools';
+import { UploadFileTool } from 'file-upload-tools';
 
-async function uploadFile(file: File) {
-  // Step 1: Split the file into chunks
-  const { fileChunks, chunkSize } = await currentFileChunks(file);
+async function uploadLargeFileChunks(chunks: AsyncFunction[]) {
+  const { fileChunks, chunkSize } = currentFileChunks(file);
+  const fileChunksArr = fileChunks.map((chunk, index) => {
+    // signal parameter is optional
+    return async ({ signal }) => {
+      const fd = new FormData();
+      fd.append('chunkFile', chunk);
+      // Must use await to wait for the request to complete, otherwise the upload result cannot be obtained
+      const value = await axios({
+        url: `api/upload`,
+        method: 'post',
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+        data: fd,
+        signal,
+      });
+      return value;
+    };
+  });
+  const uploadTool = new UploadFileTool(fileChunksArr); // 3 concurrent uploads
 
-  // Step 2: Define the upload callback function
-  const uploadChunk = async (chunk: Blob, index: number) => {
-    console.log(`Uploading chunk ${index + 1} of ${fileChunks.length}`);
-    // Simulate an upload request
-    await fetch('/upload', {
-      method: 'POST',
-      body: chunk,
-    });
-  };
-
-  // Step 3: Upload the chunks concurrently using PromisePool
-  const pool = uploadChunksWithPool({ fileChunks, maxTasks: 4 }, uploadChunk);
+  // Set a listener to monitor the progress
+  uploadTool.setIndexChangeListener(index => {
+    console.log(`Currently processing chunk index: ${index}`);
+  });
 
   // Execute the upload tasks
-  pool.exec().then(() => {
-    console.log('All chunks uploaded successfully!');
-  });
-}
-
-// Example usage with a file input
-const fileInput = document.querySelector('input[type="file"]');
-fileInput.addEventListener('change', event => {
-  const file = (event.target as HTMLInputElement).files[0];
-  if (file) {
-    uploadFile(file);
+  try {
+    const results = await uploadTool.exec().then(res => res);
+    console.log('All chunks have been uploaded successfully:', results);
+  } catch (error) {
+    console.error('Error during file upload:', error);
   }
-});
+}
 ```
 
 ## License

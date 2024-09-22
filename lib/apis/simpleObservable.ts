@@ -1,4 +1,3 @@
-// 简化版的 Subject 实现
 export class SimpleSubject<T> {
   protected observers: Array<(value: T) => void> = [];
   protected isCompleted: boolean = false;
@@ -13,7 +12,6 @@ export class SimpleSubject<T> {
     this.observers.push(cb);
 
     return {
-      // 取消当前订阅
       unsubscribe: () => {
         this.observers = this.observers.filter((observer) => observer !== cb);
       },
@@ -34,7 +32,6 @@ export class SimpleSubject<T> {
   }
 }
 
-// 简化版的 BehaviorSubject 实现，继承自 SimpleSubject
 export class SimpleBehaviorSubject<T> extends SimpleSubject<T> {
   public value: T;
 
@@ -44,7 +41,7 @@ export class SimpleBehaviorSubject<T> extends SimpleSubject<T> {
   }
 
   subscribe(next: (value: T) => void) {
-    next(this.value); // 立即推送当前值
+    next(this.value); 
     return super.subscribe(next);
   }
 

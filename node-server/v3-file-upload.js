@@ -1,3 +1,6 @@
+/* eslint-disable no-undef */
+/* eslint-disable @typescript-eslint/no-unused-vars */
+/* eslint-disable @typescript-eslint/no-require-imports */
 const express = require('express');
 const app = express();
 const port = 3030;
@@ -27,7 +30,7 @@ app.listen(port, () => console.log('大文件上传：监听3030端口'));
 const UPLOAD_DIR = path.resolve(__dirname, 'target');
 
 // 创建临时文件夹用于临时存储 所有的文件切片
-const getChunkDir = (fileHash) => {
+const getChunkDir = fileHash => {
   // 添加 chunkCache 前缀与文件名做区分
   // target/chunkCache_fileHash值
   return path.resolve(UPLOAD_DIR, `chunkCache_${fileHash}`);
@@ -39,7 +42,6 @@ app.post('/upload', async (req, res) => {
 
   // return
   // 把主线程卡主两秒再返回
-  // sleep(2000);
 
   try {
     // 处理文件表单
@@ -53,10 +55,6 @@ app.post('/upload', async (req, res) => {
       // 文件hash ，切片hash ，文件名
       // console.log(files);
       const { fileHash, chunkHash, fileName } = fields;
-      console.log(fileHash);
-      console.log(chunkHash);
-      console.log(fileName);
-      console.log('end');
       // files是传过来的文件所在的真实路径以及内容
       const { chunkFile } = files;
 
@@ -87,12 +85,12 @@ app.post('/upload', async (req, res) => {
 });
 
 // 处理请求参数
-const resolvePost = (req) => {
+const resolvePost = req => {
   // 所有接收到的数据块拼接成一个字符串，然后解析为 JSON 对象。
-  return new Promise((resolve) => {
+  return new Promise((resolve, reject) => {
     let body = []; // 使用数组而不是字符串来避免大字符串的内存问题
     // 监听请求对象 req 的 data 事件。每当有数据块传输过来时，处理程序就会被调用。
-    req.on('data', (data) => {
+    req.on('data', data => {
       // 假设数据是 Buffer，将其追加到数组中
       body.push(data);
     });
@@ -104,6 +102,7 @@ const resolvePost = (req) => {
       const stringData = buffer.toString('utf8');
       try {
         // 尝试解析 JSON 字符串
+        console.log(stringData);
         const parsedData = JSON.parse(stringData);
         // 如果解析成功，则 resolve
         resolve(parsedData);
@@ -112,7 +111,7 @@ const resolvePost = (req) => {
         reject(new Error('参数解析失败'));
       }
       // 可以添加一个 'error' 事件监听器来处理任何可能出现的错误
-      req.on('error', (error) => {
+      req.on('error', error => {
         reject(error);
       });
     });
@@ -121,9 +120,9 @@ const resolvePost = (req) => {
 
 // 把文件切片写成总的一个文件流
 const pipeStream = (path, writeStream) => {
-  return new Promise((resolve) => {
+  return new Promise(resolve => {
     // 创建可读流
-    const readStream = fse.createReadStream(path).on('error', (err) => {
+    const readStream = fse.createReadStream(path).on('error', err => {
       // 如果在读取过程中发生错误，拒绝 Promise
       reject(err);
     });
@@ -177,7 +176,7 @@ const mergeFileChunk = async (chunkSize, fileHash, filePath) => {
           return Promise.reject(`${chunkCache} 不存在，不能删除`);
         }
       })
-      .catch((err) => {
+      .catch(err => {
         console.error('文件处理过程中发生错误：', err);
         // 在这里处理错误，可能需要清理资源等
         return Promise.reject(`'文件处理过程中发生错误：${err}`);
@@ -189,7 +188,7 @@ const mergeFileChunk = async (chunkSize, fileHash, filePath) => {
 };
 
 // 提取文件后缀名
-const extractExt = (fileName) => {
+const extractExt = fileName => {
   // 查找'.'在fileName中最后出现的位置
   const lastIndex = fileName.lastIndexOf('.');
   // 如果'.'不存在，则返回空字符串
@@ -226,7 +225,7 @@ app.post('/merge', async (req, res) => {
 });
 
 // 返回已上传的所有切片名
-const createUploadedList = async (fileHash) => {
+const createUploadedList = async fileHash => {
   // 如果存在这个目录则返回这个目录下的所有切片
   // fse.readdir返回一个数组，其中包含指定目录中的文件名。
   return fse.existsSync(getChunkDir(fileHash)) ? await fse.readdir(getChunkDir(fileHash)) : [];
