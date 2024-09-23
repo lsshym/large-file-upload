@@ -5,6 +5,8 @@ export interface FileHashResult {
   hash: string;
   chunkSize: number;
 }
+const maxSampleCount = 100; // 最大抽样数量限制
+
 /**
  * Generates a hash for the given file by dividing it into chunks and processing them in parallel using Web Workers.
  *
@@ -67,16 +69,19 @@ export function generateFileHash(file: File, customChunkSize?: number): Promise<
         };
         const start = i * fileChunkSize;
         const blobChunk = fileChunks.slice(start, start + fileChunkSize);
-        Promise.all(blobChunk.map(async blob => await blob.arrayBuffer())).then(arrayBuffers => {
-          worker.postMessage(
-            {
-              label: WorkerLabelsEnum.INIT,
-              data: arrayBuffers,
-              index: i,
-            },
-            arrayBuffers,
-          );
-        });
+        const sampledChunks = deterministicSampling(blobChunk, maxSampleCount, 5, 0.1);
+        Promise.all(sampledChunks.map(async blob => await blob.arrayBuffer())).then(
+          arrayBuffers => {
+            worker.postMessage(
+              {
+                label: WorkerLabelsEnum.INIT,
+                data: arrayBuffers,
+                index: i,
+              },
+              arrayBuffers,
+            );
+          },
+        );
       }
     } catch (error) {
       reject(new Error(`Failed to generate file hash with array buffer: ${error}`));
@@ -90,4 +95,51 @@ async function hashConcat(hashes: string[]): Promise<string> {
   const hashArray = Array.from(new Uint8Array(buffer));
   const truncatedHashArray = hashArray.slice(0, 16); // 现在取前 16 个字节
   return truncatedHashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+/**
+ * 确定性抽样分块的函数。保证同一个文件在每次抽样时结果一致。
+ *
+ * @param {Blob[]} chunks - 文件分块数组。
+ * @param {number} maxSampleCount - 最大抽样数量，用于限制总抽样数目。
+ * @param {number} [minSampleCount=5] - 最小抽样数量，用于确保最少的样本数目。
+ * @param {number} [sampleRate=0.1] - 抽样比例 (0-1 之间)，用于计算抽样的目标数量。
+ * @returns {Blob[]} 抽样后的分块数组。
+ */
+function deterministicSampling(
+  chunks: Blob[],
+  maxSampleCount: number,
+  minSampleCount: number = 5,
+  sampleRate: number = 0.1,
+): Blob[] {
+  // 确保 sampleRate 在 0-1 之间
+  sampleRate = Math.max(0, Math.min(1, sampleRate));
+
+  // 根据抽样比例计算目标抽样数量
+  let targetSampleCount = Math.floor(chunks.length * sampleRate);
+
+  // 目标数量在最小和最大范围内调整
+  targetSampleCount = Math.max(minSampleCount, Math.min(maxSampleCount, targetSampleCount));
+
+  // 如果块数量少于目标数量，则直接返回所有块
+  if (chunks.length <= targetSampleCount) {
+    return chunks;
+  }
+
+  // 使用一个固定的种子，确保每次抽样的结果一致
+  const seed = 12345; // 可以根据文件的某个特征生成，例如文件名的哈希
+
+  // 将块数组的索引与种子结合，用于计算权重
+  const weightedChunks = chunks.map((chunk, index) => {
+    const weight = (index + seed) % chunks.length; // 基于种子和索引生成一个权重
+    return { chunk, weight };
+  });
+
+  // 按权重排序，确保选择前 targetSampleCount 个块
+  weightedChunks.sort((a, b) => a.weight - b.weight);
+
+  // 取排序后前 targetSampleCount 个块
+  const sampledChunks = weightedChunks.slice(0, targetSampleCount).map(item => item.chunk);
+
+  return sampledChunks;
 }

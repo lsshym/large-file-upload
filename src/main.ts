@@ -30,7 +30,9 @@ fileInput.addEventListener('change', async event => {
   if (file) {
     // 创建文件切片，返回一个切片数组和每个切片的大小
     const { fileChunks, chunkSize } = currentFileChunks(file);
-    // startTimer(generateFileHash, file);
+    startTimer(generateFileHash, file);
+
+    return
     const hashId = '6666666666';
     const arr = fileChunks.map((chunk, index) => {
       return async ({ signal }) => {

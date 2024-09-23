@@ -2,12 +2,12 @@ import { createMD5 } from 'hash-wasm';
 import { WorkerLabelsEnum } from './worker.enum';
 
 addEventListener('message', async (event: MessageEvent) => {
-  const { label, data, index }: { label: WorkerLabelsEnum; data: ArrayBuffer[]; index: number } = event.data;
+  const { label, data, index }: { label: WorkerLabelsEnum; data: ArrayBuffer[]; index: number } =
+    event.data;
 
   try {
     switch (label) {
       case WorkerLabelsEnum.INIT: {
-
         const md5 = await createMD5();
         md5.init();
 
