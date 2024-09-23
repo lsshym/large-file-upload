@@ -40,7 +40,7 @@ Splits the given file into multiple chunks of the specified size.
 
 ### `generateFileHash`
 
-Calculate the hash of the given file using MD5.
+Calculate the hash of the given file.
 
 **Parameters**:
 
