@@ -43,10 +43,8 @@
   },
   "keywords": [
     "file chunk",
-    "file chunks",
     "file hash",
-    "concurrent upload",
-    "promisepPool",
+    "file upload",
     "large files",
     "large file upload",
     "file management",
