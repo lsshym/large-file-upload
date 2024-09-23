@@ -5,7 +5,7 @@ export interface FileHashResult {
   hash: string;
   chunkSize: number;
 }
-const maxSampleCount = 100; // 最大抽样数量限制
+const maxSampleCount = 100;
 
 /**
  * Generates a hash for the given file by dividing it into chunks and processing them in parallel using Web Workers.
