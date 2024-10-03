@@ -13,10 +13,10 @@ document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
 `;
 // 计时器函数
 async function startTimer(cb: Function, file: File, workerCount?: number) {
-  console.time(`${cb.name} time ${workerCount}`);
+  console.time(`${cb.name} time`);
   const { hash: hashId } = await cb(file, workerCount);
   console.log('aborted', hashId, file.size / 1024 / 1024 / 1024);
-  console.timeEnd(`${cb.name} time ${workerCount}`);
+  console.timeEnd(`${cb.name} time`);
   return hashId;
 }
 // 监听文件上传事件

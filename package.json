@@ -42,14 +42,11 @@
     "url": "https://github.com/lsshym/file-upload-tools"
   },
   "keywords": [
-    "file chunk",
     "file hash",
     "file upload",
-    "large files",
+    "file chunk",
     "large file upload",
-    "file management",
-    "split files",
-    "hash generation"
+    "split files"
   ],
   "author": "lsshym",
   "license": "MIT",

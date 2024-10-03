@@ -65,7 +65,7 @@ export function generateFileHash(file: File, customChunkSize?: number): Promise<
 
         worker.onerror = error => {
           reject(new Error(`Worker error: ${error.message}`));
-          worker.terminate();
+          workers.forEach(w => w.terminate()); // 终止所有 Worker
         };
         const start = i * fileChunkSize;
         const blobChunk = fileChunks.slice(start, start + fileChunkSize);
