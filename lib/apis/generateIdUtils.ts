@@ -1,5 +1,5 @@
 import { currentFileChunks, FileChunkResult } from './currentFileChunks';
-import { WorkerLabelsEnum } from './worker/worker.enum';
+import { WorkerLabelsEnum } from './worker/md5.workers';
 
 export interface FileHashResult {
   hash: string;

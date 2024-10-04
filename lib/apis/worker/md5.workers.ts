@@ -1,5 +1,18 @@
 import { createMD5 } from 'hash-wasm';
-import { WorkerLabelsEnum } from './worker.enum';
+
+export enum WorkerLabelsEnum {
+  INIT = 'INIT',
+  INIT_DONE = 'INIT_DONE',
+  DOING = 'DOING',
+  DONE = 'DONE',
+  ERROR = 'ERROR',
+  TEST = 'TEST',
+}
+
+export type WorkerMessage = {
+  label: WorkerLabelsEnum;
+  data: ArrayBuffer[] | string;
+};
 
 addEventListener('message', async (event: MessageEvent) => {
   const { label, data, index }: { label: WorkerLabelsEnum; data: ArrayBuffer[]; index: number } =
@@ -30,7 +43,7 @@ addEventListener('message', async (event: MessageEvent) => {
   } catch (error) {
     postMessage({
       label: WorkerLabelsEnum.ERROR,
-      data: error.message,
+      data: error,
       index,
     });
   }
