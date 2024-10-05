@@ -1,4 +1,4 @@
-import { createMD5 } from 'hash-wasm';
+import { createMD5 } from "hash-wasm";
 
 export enum WorkerLabelsEnum {
   INIT = 'INIT',
