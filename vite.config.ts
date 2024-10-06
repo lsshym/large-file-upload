@@ -12,9 +12,10 @@ export default defineConfig({
       },
     },
   },
-  // worker: {
-  //   format: 'es',
-  // },
+  base: './',
+  worker: {
+    format: 'es',
+  },
   build: {
     lib: {
       entry: './lib/main.ts',
