@@ -1,4 +1,4 @@
-import { UploadFileTool } from './apis/upload.tool';
+import { UploadHelper } from './apis/upload.helper.class';
 import { generateFileHash } from './apis/generateIdUtils';
 import { currentFileChunks } from './apis/currentFileChunks';
-export { currentFileChunks, generateFileHash, UploadFileTool };
+export { currentFileChunks, generateFileHash, UploadHelper };
