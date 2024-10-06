@@ -46,6 +46,5 @@ export function currentFileChunks(file: File, customChunkSize?: number): FileChu
     const end = Math.min(start + chunkSize, size);
     fileChunks.push(file.slice(start, end));
   }
-
-  return { fileChunks, chunkSize };
+  return { fileChunks, chunkSize: chunkSize / BASESIZE };
 }
