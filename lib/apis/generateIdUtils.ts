@@ -43,6 +43,7 @@ export function generateFileHash(file: File, customChunkSize?: number): Promise<
         // const worker = new Worker(new URL('./md5.workers.ts', import.meta.url), {
         //   type: 'module',
         // });
+        // 有bug，初步怀疑和hasm-wasm有关，暂时注释掉
         const worker = new Md5Worker();
         workers.push(worker);
         worker.onmessage = (event: MessageEvent) => {

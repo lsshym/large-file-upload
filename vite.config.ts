@@ -12,11 +12,10 @@ export default defineConfig({
       },
     },
   },
-  worker: {
-    format: 'es',
-  },
+  // worker: {
+  //   format: 'es',
+  // },
   build: {
-    sourcemap: true,  // 开启 Source Map
     lib: {
       entry: './lib/main.ts',
       name: 'large-file-upload', // 库的全局变量名称（用于 UMD/IIFE 构建）
