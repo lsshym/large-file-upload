@@ -1,7 +1,7 @@
 // import { createMD5 } from 'hash-wasm';
 import { WorkerLabelsEnum } from './generateIdUtils';
 
-addEventListener('message', async (event: MessageEvent) => {
+self.addEventListener('message', async (event: MessageEvent) => {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { label, data, index }: { label: WorkerLabelsEnum; data: ArrayBuffer[]; index: number } =
     event.data;
