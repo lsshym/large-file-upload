@@ -1,15 +1,5 @@
 import { createMD5 } from 'hash-wasm';
-
-export enum WorkerLabelsEnum {
-  DOING = 'DOING',
-  DONE = 'DONE',
-  ERROR = 'ERROR',
-}
-
-export type WorkerMessage = {
-  label: WorkerLabelsEnum;
-  data: ArrayBuffer[] | string;
-};
+import { WorkerLabelsEnum } from './generateIdUtils';
 
 addEventListener('message', async (event: MessageEvent) => {
   const { label, data, index }: { label: WorkerLabelsEnum; data: ArrayBuffer[]; index: number } =

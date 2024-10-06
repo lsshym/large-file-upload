@@ -1,5 +1,10 @@
 import { currentFileChunks, FileChunkResult } from './currentFileChunks';
-import { WorkerLabelsEnum } from './md5.workers';
+
+export enum WorkerLabelsEnum {
+  DOING = 'DOING',
+  DONE = 'DONE',
+  ERROR = 'ERROR',
+}
 
 export interface FileHashResult {
   hash: string;
