@@ -3,7 +3,6 @@ import dts from 'vite-plugin-dts';
 import { visualizer } from 'rollup-plugin-visualizer'; // 打包视图分析
 
 export default defineConfig({
-  base: '/file-upload-tools/',
   server: {
     proxy: {
       '/api': {
@@ -15,11 +14,6 @@ export default defineConfig({
   },
   worker: {
     format: 'es',
-    rollupOptions: {
-      output: {
-        entryFileNames: 'assets/[name]-[hash].js', // 为 Web Worker 定义输出路径
-      },
-    },
   },
   build: {
     lib: {
