@@ -5,7 +5,7 @@ import { SimpleBehaviorSubject } from './simpleObservable';
 type AsyncFunction<T = any> = (props: { signal: AbortSignal }) => Promise<T>;
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export class UploadFileTool<T = any> {
+export class UploadHelper<T = any> {
   private queue: { fn: AsyncFunction<T>; index: number }[] = [];
   private maxConcurrentTasks: number;
   private results: (T | Error)[] = [];

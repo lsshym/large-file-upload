@@ -1,4 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+
+// 废弃，感觉不如class好用
 import { SimpleBehaviorSubject } from './simpleObservable';
 
 type AsyncFunction<T = any> = (props: { signal: AbortSignal }) => Promise<T>;
