@@ -14,6 +14,11 @@ export default defineConfig({
   },
   worker: {
     format: 'es',
+    rollupOptions: {
+      output: {
+        entryFileNames: 'assets/[name]-[hash].js', // 为 Web Worker 定义输出路径
+      },
+    },
   },
   build: {
     lib: {
