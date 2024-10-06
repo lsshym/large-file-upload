@@ -1,4 +1,5 @@
 import { currentFileChunks, FileChunkResult } from './currentFileChunks';
+import Worker from "omt:./md5.workers.ts";
 
 export enum WorkerLabelsEnum {
   DOING = 'DOING',
@@ -39,9 +40,11 @@ export function generateFileHash(file: File, customChunkSize?: number): Promise<
 
     try {
       for (let i = 0; i < workerCount; i++) {
-        const worker = new Worker(new URL('./md5.workers.ts', import.meta.url), {
-          type: 'module',
-        });
+        // const worker = new Worker(new URL('./md5.workers.ts', import.meta.url), {
+        //   type: 'module',
+        // });
+        const worker = new Worker();
+
         workers.push(worker);
         worker.onmessage = (event: MessageEvent) => {
           const { label, data, index } = event.data;

@@ -1,4 +1,4 @@
-declare module '*?worker' {
-  const workerConstructor: new () => Worker;
-  export default workerConstructor;
+declare module 'omt:*' {
+  const WorkerFactory: new () => Worker;
+  export default WorkerFactory;
 }
