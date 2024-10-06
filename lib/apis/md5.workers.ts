@@ -1,25 +1,23 @@
-// import { createMD5 } from 'hash-wasm';
+import { createMD5 } from 'hash-wasm';
 import { WorkerLabelsEnum } from './generateIdUtils';
 
 self.addEventListener('message', async (event: MessageEvent) => {
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { label, data, index }: { label: WorkerLabelsEnum; data: ArrayBuffer[]; index: number } =
     event.data;
 
   try {
     switch (label) {
       case WorkerLabelsEnum.DOING: {
-        // const md5 = await createMD5();
-        // md5.init();
+        const md5 = await createMD5();
+        md5.init();
 
-        // // 对每个 ArrayBuffer 进行增量哈希更新
-        // data.forEach(buffer => {
-        //   md5.update(new Uint8Array(buffer));
-        // });
+        // 对每个 ArrayBuffer 进行增量哈希更新
+        data.forEach(buffer => {
+          md5.update(new Uint8Array(buffer));
+        });
 
-        // // 生成增量 MD5 的中间状态并传回主线程
-        // const partialHashState = md5.digest('hex'); // 返回 MD5 结果
-        const partialHashState = '1111111111111';
+        // 生成增量 MD5 的中间状态并传回主线程
+        const partialHashState = md5.digest('hex'); // 返回 MD5 结果
         postMessage({
           label: WorkerLabelsEnum.DONE,
           data: partialHashState, // 发送 MD5 结果
