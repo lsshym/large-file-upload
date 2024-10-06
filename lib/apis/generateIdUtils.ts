@@ -1,5 +1,5 @@
 import { currentFileChunks, FileChunkResult } from './currentFileChunks';
-// import Md5Worker from './md5.workers.ts?worker';
+import Md5Worker from './md5.workers.ts?worker';
 
 export enum WorkerLabelsEnum {
   DOING = 'DOING',
@@ -40,11 +40,11 @@ export function generateFileHash(file: File, customChunkSize?: number): Promise<
 
     try {
       for (let i = 0; i < workerCount; i++) {
-        const worker = new Worker(new URL('./md5.workers.ts', import.meta.url), {
-          type: 'module',
-        });
+        // const worker = new Worker(new URL('./md5.workers.ts', import.meta.url), {
+        //   type: 'module',
+        // });
         // 有bug，初步怀疑和hasm-wasm有关，暂时注释掉
-        // const worker = new Md5Worker();
+        const worker = new Md5Worker();
         workers.push(worker);
         worker.onmessage = (event: MessageEvent) => {
           const { label, data, index } = event.data;
