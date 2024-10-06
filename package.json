@@ -1,7 +1,7 @@
 {
   "name": "large-file-upload",
   "private": false,
-  "version": "1.0.0",
+  "version": "1.0.1-0",
   "description": "A library for handling file uploads with chunking, hashing, and concurrent upload management.",
   "type": "module",
   "files": [
@@ -41,7 +41,7 @@
     "type": "git",
     "url": "https://github.com/lsshym/large-file-upload"
   },
-"keywords": [
+  "keywords": [
     "file",
     "upload",
     "large file",
@@ -52,7 +52,7 @@
     "file chunking",
     "file upload",
     "large file upload"
-],
+  ],
   "author": "lsshym",
   "license": "MIT",
   "homepage": "https://github.com/lsshym/large-file-upload#readme"
