@@ -1,5 +1,4 @@
 import { currentFileChunks, FileChunkResult } from './currentFileChunks';
-import * as Comlink from 'comlink';
 
 export enum WorkerLabelsEnum {
   DOING = 'DOING',
@@ -30,57 +29,94 @@ const maxSampleCount = 100;
  * - `chunkSize`: The size of each chunk used during hashing (in MB).
  */
 export function generateFileHash(file: File, customChunkSize?: number): Promise<FileHashResult> {
-  return new Promise(async (resolve, reject) => {
+  return new Promise((resolve, reject) => {
     const { fileChunks, chunkSize }: FileChunkResult = currentFileChunks(file, customChunkSize);
     const workerCount = 4;
     const fileChunkSize = Math.ceil(fileChunks.length / workerCount);
+    const workers: Worker[] = [];
     const partialHashes: string[] = [];
     let completedWorkers = 0;
 
     try {
-      // 启动多个 Web Worker 并使用 Comlink 包装它们
       for (let i = 0; i < workerCount; i++) {
         const worker = new Worker(new URL('./md5.worker.ts', import.meta.url), {
           type: 'module',
         });
+        workers.push(worker);
+        worker.onmessage = (event: MessageEvent) => {
+          const { label, data, index } = event.data;
 
-        // 使用 Comlink 包装 Worker
-        const workerAPI = Comlink.wrap(worker);
+          switch (label) {
+            case WorkerLabelsEnum.DONE:
+              partialHashes[index] = data;
+              completedWorkers++;
+              if (completedWorkers === workerCount) {
+                hashConcat(partialHashes)
+                  .then(finalHash => {
+                    resolve({
+                      hash: finalHash,
+                      chunkSize,
+                    });
+                  })
+                  .catch(error => {
+                    let errorMessage = 'Unknown error';
+                    if (error instanceof Error) {
+                      errorMessage = `${error.message}\n${error.stack}`;
+                    } else {
+                      errorMessage = String(error);
+                    }
+                    reject(new Error(`Failed to concatenate hashes: ${errorMessage}`));
+                  });
+              }
+              worker.terminate();
+              break;
+
+            case WorkerLabelsEnum.ERROR:
+              reject(new Error(`Worker ${index} reported error: ${data}`));
+              worker.terminate();
+              break;
+
+            default:
+              reject(new Error(`Unexpected message label received from worker ${index}: ${label}`));
+              worker.terminate();
+              break;
+          }
+        };
+
+        worker.onerror = event => {
+          let errorMessage = 'Unknown worker error';
+          if (event instanceof ErrorEvent) {
+            errorMessage = `Message: ${event.message}\nFilename: ${event.filename}\nLine: ${event.lineno}\nColumn: ${event.colno}\nError: ${event.error}`;
+          } else {
+            errorMessage = JSON.stringify(event);
+          }
+          reject(new Error(`Worker error: ${errorMessage}`));
+          workers.forEach(w => w.terminate()); // 终止所有 Worker
+        };
 
         const start = i * fileChunkSize;
         const blobChunk = fileChunks.slice(start, start + fileChunkSize);
         const sampledChunks = deterministicSampling(blobChunk, maxSampleCount, 5, 0.1);
-
-        const arrayBuffers = await Promise.all(sampledChunks.map(blob => blob.arrayBuffer()));
-
-        // 通过 Comlink 调用 Worker 的 processMD5 方法
-        const result = await workerAPI.processMD5(WorkerLabelsEnum.DOING, arrayBuffers, i);
-
-        // 处理 Worker 返回的结果
-        partialHashes[i] = result.data;
-        completedWorkers++;
-
-        if (completedWorkers === workerCount) {
-          hashConcat(partialHashes)
-            .then(finalHash => {
-              resolve({
-                hash: finalHash,
-                chunkSize,
-              });
-            })
-            .catch(error => {
-              let errorMessage = 'Unknown error';
-              if (error instanceof Error) {
-                errorMessage = `${error.message}\n${error.stack}`;
-              } else {
-                errorMessage = String(error);
-              }
-              reject(new Error(`Failed to concatenate hashes: ${errorMessage}`));
-            });
-        }
-
-        // 释放 worker
-        workerAPI[Comlink.releaseProxy]();
+        Promise.all(sampledChunks.map(blob => blob.arrayBuffer()))
+          .then(arrayBuffers => {
+            worker.postMessage(
+              {
+                label: WorkerLabelsEnum.DOING,
+                data: arrayBuffers,
+                index: i,
+              },
+              arrayBuffers,
+            );
+          })
+          .catch(error => {
+            let errorMessage = 'Unknown error';
+            if (error instanceof Error) {
+              errorMessage = `${error.message}\n${error.stack}`;
+            } else {
+              errorMessage = String(error);
+            }
+            reject(new Error(`Failed to read file chunks: ${errorMessage}`));
+          });
       }
     } catch (error) {
       let errorMessage = 'Unknown error';
