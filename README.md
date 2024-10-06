@@ -8,11 +8,11 @@ file-upload-tools is a powerful and flexible library designed to handle the spli
 - [API Reference](#api-reference)
   - [currentFileChunks](#currentfilechunks)
   - [generateFileHash](#generatefilehash)
-  - [UploadFileTool](#uploadfiletool)
+  - [UploadHelper](#UploadHelper)
 - [Examples](#examples)
   - [Example: Splitting and Uploading a File](#example-splitting-and-uploading-a-file)
   - [Example: Generating a File Hash in Chunks](#example-generating-a-file-hash-in-chunks)
-  - [Example: Using UploadFileTool to Manage File Uploads](#example-using-uploadfiletool-to-manage-file-uploads)
+  - [Example: Using UploadHelper to Manage File Uploads](#example-using-UploadHelper-to-manage-file-uploads)
 - [License](#license)
 
 ## Installation
@@ -51,7 +51,7 @@ Calculate the hash of the given file.
 
 - `Promise<{ hash: string, chunkSize: number }>` - A promise that resolves to an object containing the hash and chunk size.
 
-### `UploadFileTool`
+### `UploadHelper`
 
 A utility class to manage and control the upload of file chunks with support for concurrency, pausing, resuming, and canceling uploads.
 
@@ -111,12 +111,12 @@ async function hashLargeFile(file: File) {
 }
 ```
 
-### Example: Using UploadFileTool to Manage File Uploads
+### Example: Using UploadHelper to Manage File Uploads
 
-This example demonstrates how to use the `UploadFileTool` to manage and control the upload of file chunks:
+This example demonstrates how to use the `UploadHelper` to manage and control the upload of file chunks:
 
 ```typescript
-import { UploadFileTool } from 'file-upload-tools';
+import { UploadHelper } from 'file-upload-tools';
 
 async function uploadLargeFileChunks(chunks: AsyncFunction[]) {
   const { fileChunks, chunkSize } = currentFileChunks(file);
@@ -138,7 +138,7 @@ async function uploadLargeFileChunks(chunks: AsyncFunction[]) {
       return value;
     };
   });
-  const uploadTool = new UploadFileTool(fileChunksArr); // 3 concurrent uploads
+  const uploadTool = new UploadHelper(fileChunksArr); // 3 concurrent uploads
 
   // Set a listener to monitor the progress
   uploadTool.setIndexChangeListener(index => {

@@ -1,4 +1,4 @@
-import { currentFileChunks, generateFileHash, UploadFileTool, uploadHelper } from '../lib/main';
+import { currentFileChunks, generateFileHash } from '../lib/main';
 import axios from 'axios';
 document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
   <div>
@@ -28,7 +28,9 @@ fileInput.addEventListener('change', async event => {
     const { fileChunks, chunkSize } = currentFileChunks(file);
     // startTimer(generateFileHash, file);
     const { hash: hashId } = await generateFileHash(file, chunkSize);
+    console.log(hashId)
 
+    return
     const arr = fileChunks.map((chunk, index) => {
       return async ({ signal }) => {
         const fd = new FormData();
