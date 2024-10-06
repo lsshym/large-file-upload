@@ -18,8 +18,8 @@ export default defineConfig({
   build: {
     lib: {
       entry: './lib/main.ts',
-      name: 'file-upload-tools', // 库的全局变量名称（用于 UMD/IIFE 构建）
-      fileName: 'file-upload-tools', // 输出文件名，基于不同格式生成文件
+      name: 'large-file-upload', // 库的全局变量名称（用于 UMD/IIFE 构建）
+      fileName: 'large-file-upload', // 输出文件名，基于不同格式生成文件
     },
   },
   plugins: [

@@ -1,19 +1,19 @@
 {
-  "name": "file-upload-tools",
+  "name": "large-file-upload",
   "private": false,
-  "version": "1.0.1",
+  "version": "1.0.0",
   "description": "A library for handling file uploads with chunking, hashing, and concurrent upload management.",
   "type": "module",
   "files": [
     "dist"
   ],
-  "main": "./dist/file-upload-tools.umd.cjs",
-  "module": "./dist/file-upload-tools.js",
+  "main": "./dist/large-file-upload.umd.cjs",
+  "module": "./dist/large-file-upload.js",
   "types": "./dist/main.d.ts",
   "exports": {
     "types": "./dist/main.d.ts",
-    "import": "./dist/file-upload-tools.js",
-    "require": "./dist/file-upload-tools.umd.cjs"
+    "import": "./dist/large-file-upload.js",
+    "require": "./dist/large-file-upload.umd.cjs"
   },
   "scripts": {
     "dev": "vite",
@@ -39,13 +39,21 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/lsshym/file-upload-tools"
+    "url": "https://github.com/lsshym/large-file-upload"
   },
-  "keywords": [
+"keywords": [
     "file",
-    "upload"
-  ],
+    "upload",
+    "large file",
+    "big file",
+    "file uploader",
+    "chunk upload",
+    "chunked upload",
+    "file chunking",
+    "file upload",
+    "large file upload"
+],
   "author": "lsshym",
   "license": "MIT",
-  "homepage": "https://github.com/lsshym/file-upload-tools#readme"
+  "homepage": "https://github.com/lsshym/large-file-upload#readme"
 }

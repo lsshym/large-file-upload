@@ -1,6 +1,6 @@
-# file-upload-tools
+# large-file-upload
 
-file-upload-tools is a powerful and flexible library designed to handle the splitting, processing, and uploading of large files in chunks.
+large-file-upload is a powerful and flexible library designed to handle the splitting, processing, and uploading of large files in chunks.
 
 ## Table of Contents
 
@@ -20,7 +20,7 @@ file-upload-tools is a powerful and flexible library designed to handle the spli
 To install the FileChunksTools library, use the following command:
 
 ```bash
-npm install file-upload-tools
+npm install large-file-upload
 ```
 
 ## API Reference
@@ -83,7 +83,7 @@ You must use `await` to wait for the request to complete, otherwise the upload r
 This example demonstrates how to use the `currentFileChunks` function to split a file into multiple chunks:
 
 ```typescript
-import { currentFileChunks } from 'file-upload-tools';
+import { currentFileChunks } from 'large-file-upload';
 
 async function splitFile(file: File) {
   // Split the file into chunks
@@ -101,7 +101,7 @@ async function splitFile(file: File) {
 This example shows how to generate a hash for a large file using the `generateFileHash` function, which processes the file in chunks:
 
 ```typescript
-import { generateFileHash } from 'file-upload-tools';
+import { generateFileHash } from 'large-file-upload';
 
 async function hashLargeFile(file: File) {
   const { hash, chunkSize } = await generateFileHash(file);
@@ -116,7 +116,7 @@ async function hashLargeFile(file: File) {
 This example demonstrates how to use the `UploadHelper` to manage and control the upload of file chunks:
 
 ```typescript
-import { UploadHelper } from 'file-upload-tools';
+import { UploadHelper } from 'large-file-upload';
 
 async function uploadLargeFileChunks(chunks: AsyncFunction[]) {
   const { fileChunks, chunkSize } = currentFileChunks(file);
