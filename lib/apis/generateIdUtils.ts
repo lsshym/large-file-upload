@@ -28,6 +28,7 @@ export function generateFileHash(file: File, customChunkSize?: number): Promise<
     const { fileChunks, chunkSize }: FileChunkResult = currentFileChunks(file, customChunkSize);
     const workerCount = 4;
     const fileChunkSize = Math.ceil(fileChunks.length / workerCount);
+    console.log(fileChunks.length, fileChunkSize);
     const workers: Worker[] = [];
     const partialHashes: string[] = [];
     let completedWorkers = 0;
@@ -46,45 +47,81 @@ export function generateFileHash(file: File, customChunkSize?: number): Promise<
               partialHashes[index] = data;
               completedWorkers++;
               if (completedWorkers === workerCount) {
-                hashConcat(partialHashes).then(finalHash => {
-                  resolve({
-                    hash: finalHash,
-                    chunkSize,
+                hashConcat(partialHashes)
+                  .then(finalHash => {
+                    resolve({
+                      hash: finalHash,
+                      chunkSize,
+                    });
+                  })
+                  .catch(error => {
+                    let errorMessage = 'Unknown error';
+                    if (error instanceof Error) {
+                      errorMessage = `${error.message}\n${error.stack}`;
+                    } else {
+                      errorMessage = String(error);
+                    }
+                    reject(new Error(`Failed to concatenate hashes: ${errorMessage}`));
                   });
-                });
               }
               worker.terminate();
               break;
 
+            case WorkerLabelsEnum.ERROR:
+              reject(new Error(`Worker ${index} reported error: ${data}`));
+              worker.terminate();
+              break;
+
             default:
-              reject(new Error(`Unexpected message label received: ${label}`));
+              reject(new Error(`Unexpected message label received from worker ${index}: ${label}`));
               worker.terminate();
               break;
           }
         };
 
-        worker.onerror = error => {
-          reject(new Error(`Worker error: ${error}`));
+        worker.onerror = event => {
+          let errorMessage = 'Unknown worker error';
+          if (event instanceof ErrorEvent) {
+            errorMessage = `Message: ${event.message}\nFilename: ${event.filename}\nLine: ${event.lineno}\nColumn: ${event.colno}\nError: ${event.error}`;
+          } else {
+            errorMessage = JSON.stringify(event);
+          }
+          reject(new Error(`Worker error: ${errorMessage}`));
           workers.forEach(w => w.terminate()); // 终止所有 Worker
         };
+
         const start = i * fileChunkSize;
         const blobChunk = fileChunks.slice(start, start + fileChunkSize);
         const sampledChunks = deterministicSampling(blobChunk, maxSampleCount, 5, 0.1);
-        Promise.all(sampledChunks.map(async blob => await blob.arrayBuffer())).then(
-          arrayBuffers => {
+        Promise.all(sampledChunks.map(blob => blob.arrayBuffer()))
+          .then(arrayBuffers => {
             worker.postMessage(
               {
-                label: WorkerLabelsEnum.INIT,
+                label: WorkerLabelsEnum.DOING,
                 data: arrayBuffers,
                 index: i,
               },
               arrayBuffers,
             );
-          },
-        );
+          })
+          .catch(error => {
+            let errorMessage = 'Unknown error';
+            if (error instanceof Error) {
+              errorMessage = `${error.message}\n${error.stack}`;
+            } else {
+              errorMessage = String(error);
+            }
+            reject(new Error(`Failed to read file chunks: ${errorMessage}`));
+          });
       }
     } catch (error) {
-      reject(new Error(`Failed to generate file hash with array buffer: ${error}`));
+      let errorMessage = 'Unknown error';
+      if (error instanceof Error) {
+        errorMessage = `${error.message}\n${error.stack}`;
+      } else {
+        errorMessage = String(error);
+      }
+      reject(new Error(`Failed to generate file hash with array buffer: ${errorMessage}`));
     }
   });
 }
