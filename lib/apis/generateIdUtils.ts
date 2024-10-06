@@ -28,14 +28,13 @@ export function generateFileHash(file: File, customChunkSize?: number): Promise<
     const { fileChunks, chunkSize }: FileChunkResult = currentFileChunks(file, customChunkSize);
     const workerCount = 4;
     const fileChunkSize = Math.ceil(fileChunks.length / workerCount);
-    console.log(fileChunks.length, fileChunkSize);
     const workers: Worker[] = [];
     const partialHashes: string[] = [];
     let completedWorkers = 0;
 
     try {
       for (let i = 0; i < workerCount; i++) {
-        const worker = new Worker(new URL('./md5.workers.ts', import.meta.url), {
+        const worker = new Worker(new URL('md5.workers.ts', import.meta.url), {
           type: 'module',
         });
         workers.push(worker);
