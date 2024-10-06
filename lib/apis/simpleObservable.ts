@@ -13,7 +13,7 @@ export class SimpleSubject<T> {
 
     return {
       unsubscribe: () => {
-        this.observers = this.observers.filter((observer) => observer !== cb);
+        this.observers = this.observers.filter(observer => observer !== cb);
       },
     };
   }
@@ -23,7 +23,7 @@ export class SimpleSubject<T> {
       return;
     }
 
-    this.observers.forEach((observer) => observer(value));
+    this.observers.forEach(observer => observer(value));
   }
 
   complete() {
@@ -41,7 +41,7 @@ export class SimpleBehaviorSubject<T> extends SimpleSubject<T> {
   }
 
   subscribe(next: (value: T) => void) {
-    next(this.value); 
+    next(this.value);
     return super.subscribe(next);
   }
 
