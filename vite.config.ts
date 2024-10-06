@@ -1,17 +1,19 @@
 import { defineConfig } from 'vite';
 import dts from 'vite-plugin-dts';
-import { visualizer } from 'rollup-plugin-visualizer';
+import { visualizer } from 'rollup-plugin-visualizer'; // 打包视图分析
 
 export default defineConfig({
   server: {
     proxy: {
-      // 将 /api 的请求代理到 http://localhost:3030
       '/api': {
         target: 'http://localhost:3030',
         changeOrigin: true,
         rewrite: path => path.replace(/^\/api/, ''), // 可选：如果你想移除路径中的 /api
       },
     },
+  },
+  worker: {
+    format: 'es',
   },
   build: {
     lib: {
