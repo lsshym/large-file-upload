@@ -1,7 +1,7 @@
 {
   "name": "file-upload-tools",
   "private": false,
-  "version": "2.6.2-2",
+  "version": "2.6.2-3",
   "description": "A library for handling file uploads with chunking, hashing, and concurrent upload management.",
   "type": "module",
   "files": [
