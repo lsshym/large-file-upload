@@ -1,4 +1,4 @@
-import { currentFileChunks, FileChunkResult } from './currentFileChunks';
+import { createFileChunks, FileChunkResult } from './createFileChunks';
 import Md5Worker from './md5.worker.ts?worker';
 
 export enum WorkerLabelsEnum {
@@ -31,7 +31,7 @@ const maxSampleCount = 100;
  */
 export function generateFileHash(file: File, customChunkSize?: number): Promise<FileHashResult> {
   return new Promise((resolve, reject) => {
-    const { fileChunks, chunkSize }: FileChunkResult = currentFileChunks(file, customChunkSize);
+    const { fileChunks, chunkSize }: FileChunkResult = createFileChunks(file, customChunkSize);
     const workerCount = 4;
     const fileChunkSize = Math.ceil(fileChunks.length / workerCount);
     const workers: Worker[] = [];

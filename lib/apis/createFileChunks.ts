@@ -19,7 +19,7 @@ const BASESIZE = 1024 * 1024; // 1MB
  * - `chunkSize`: The size of each chunk (in bytes).
  * - `error` (optional): A string containing an error message if an error occurs.
  */
-export function currentFileChunks(file: File, customChunkSize?: number): FileChunkResult {
+export function createFileChunks(file: File, customChunkSize?: number): FileChunkResult {
   if (!file || !file.size) {
     throw new Error('File not found or size is 0');
   }

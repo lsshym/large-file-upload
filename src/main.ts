@@ -1,4 +1,4 @@
-import { currentFileChunks, generateFileHash } from '../lib/main';
+import { createFileChunks, generateFileHash } from '../lib/main';
 import axios from 'axios';
 document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
   <div>
@@ -25,7 +25,7 @@ fileInput.addEventListener('change', async event => {
   const file = input.files?.[0] || null;
   if (file) {
     // 创建文件切片，返回一个切片数组和每个切片的大小
-    const { fileChunks, chunkSize } = currentFileChunks(file);
+    const { fileChunks, chunkSize } = createFileChunks(file);
     // startTimer(generateFileHash, file);
     const { hash: hashId } = await generateFileHash(file, chunkSize);
     console.log(hashId)

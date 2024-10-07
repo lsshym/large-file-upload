@@ -6,7 +6,7 @@ large-file-upload is a powerful and flexible library designed to handle the spli
 
 - [Installation](#installation)
 - [API Reference](#api-reference)
-  - [currentFileChunks](#currentfilechunks)
+  - [createFileChunks](#createFileChunks)
   - [generateFileHash](#generatefilehash)
   - [UploadHelper](#UploadHelper)
 - [Examples](#examples)
@@ -25,7 +25,7 @@ npm install large-file-upload
 
 ## API Reference
 
-### `currentFileChunks`
+### `createFileChunks`
 
 Splits the given file into multiple chunks of the specified size.
 
@@ -80,14 +80,14 @@ You must use `await` to wait for the request to complete, otherwise the upload r
 
 ### Example: Splitting a File into Chunks
 
-This example demonstrates how to use the `currentFileChunks` function to split a file into multiple chunks:
+This example demonstrates how to use the `createFileChunks` function to split a file into multiple chunks:
 
 ```typescript
-import { currentFileChunks } from 'large-file-upload';
+import { createFileChunks } from 'large-file-upload';
 
 async function splitFile(file: File) {
   // Split the file into chunks
-  const { fileChunks, chunkSize } = await currentFileChunks(file);
+  const { fileChunks, chunkSize } = await createFileChunks(file);
   console.log('File has been split into the following chunks:');
   fileChunks.forEach((chunk, index) => {
     console.log(`Chunk ${index + 1} of size ${chunk.size} bytes`);
@@ -119,7 +119,7 @@ This example demonstrates how to use the `UploadHelper` to manage and control th
 import { UploadHelper } from 'large-file-upload';
 
 async function uploadLargeFileChunks(chunks: AsyncFunction[]) {
-  const { fileChunks, chunkSize } = currentFileChunks(file);
+  const { fileChunks, chunkSize } = createFileChunks(file);
   const fileChunksArr = fileChunks.map((chunk, index) => {
     // signal parameter is optional
     return async ({ signal }) => {
