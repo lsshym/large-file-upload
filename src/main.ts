@@ -1,4 +1,4 @@
-import { createFileChunks, generateFileHash } from '../lib/main';
+import { createFileChunks, generateFileHash, UploadHelper } from '../lib/main';
 import axios from 'axios';
 document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
   <div>
@@ -28,9 +28,7 @@ fileInput.addEventListener('change', async event => {
     const { fileChunks, chunkSize } = createFileChunks(file);
     // startTimer(generateFileHash, file);
     const { hash: hashId } = await generateFileHash(file, chunkSize);
-    console.log(hashId)
-
-    return
+    console.log(fileChunks)
     const arr = fileChunks.map((chunk, index) => {
       return async ({ signal }) => {
         const fd = new FormData();
@@ -52,30 +50,17 @@ fileInput.addEventListener('change', async event => {
         return value;
       };
     });
-    // testPool = new UploadFileTool(arr);
-    // testPool.setIndexChangeListener(value => {
-    //   console.log(value);
-    // });
-    // testPool.exec().then(value => {
-    //   console.log(value);
-    //   axios({
-    //     url: `api/merge`,
-    //     method: 'post',
-    //     data: {
-    //       chunkSize: chunkSize,
-    //       fileName: file.name,
-    //       fileHash: hashId,
-    //     },
-    //   });
-    // });
-    const { exec } = uploadHelper(arr);
-    exec().then(value => {
+    testPool = new UploadHelper(arr);
+    testPool.setIndexChangeListener(value => {
+      console.log(value);
+    });
+    testPool.exec().then(value => {
       console.log(value);
       axios({
         url: `api/merge`,
         method: 'post',
         data: {
-          chunkSize: chunkSize,
+          chunkSize: chunkSize * 1024 * 1024,
           fileName: file.name,
           fileHash: hashId,
         },
@@ -84,9 +69,9 @@ fileInput.addEventListener('change', async event => {
     return;
   }
 });
-// btnPause.addEventListener('click', () => {
-//   testPool.pause();
-// });
-// btnresume.addEventListener('click', () => {
-//   testPool.resume();
-// });
+btnPause.addEventListener('click', () => {
+  testPool.pause();
+});
+btnresume.addEventListener('click', () => {
+  testPool.resume();
+});
