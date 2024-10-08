@@ -15,7 +15,7 @@ export class IndexedDBHelper {
   // 私有方法，打开 IndexedDB 数据库，并返回一个 Promise
   private openDB(): Promise<IDBDatabase> {
     return new Promise((resolve, reject) => {
-      const request = indexedDB.open(this.dbName, 1); // 打开数据库，版本号为 1
+      const request = indexedDB.open(this.dbName, 2); // 打开数据库，版本号为 1
 
       // 数据库升级事件，用于创建或更新对象存储
       request.onupgradeneeded = event => {
@@ -42,12 +42,38 @@ export class IndexedDBHelper {
     const db = await this.dbPromise; // 等待数据库连接
     const transaction = db.transaction(this.storeName, 'readwrite'); // 创建读写事务
     const store = transaction.objectStore(this.storeName); // 获取对象存储
-    store.add(task); // 将任务添加到对象存储
 
-    // 返回一个 Promise，当事务完成或出错时解析或拒绝
+    // 使用 add 方法添加任务，并获取返回的 request 对象
+    // store.add(task);
+    const { data } = task;
+    const { chunk } = data;
+    // const test = chunk instanceof Blob ? chunk : new Blob([chunk]);
+    // 将二进制数据创建为 Blob
+    chunk.arrayBuffer().then(buffer => {
+      store.add({
+        data: [...buffer], // 将二进制数据转换为 Blob,
+        index: Math.floor(Math.random() * 1000000), // 生成一个随机的 index
+      });
+    });
+
     return new Promise<void>((resolve, reject) => {
-      transaction.oncomplete = () => resolve(); // 事务成功完成
-      transaction.onerror = () => reject(transaction.error); // 事务出错
+      // 当 add 操作成功时
+      // request.onsuccess = () => {
+      //   resolve();
+      // };
+
+      // // 当 add 操作失败时
+      // request.onerror = () => {
+      //   reject(request.error);
+      // };
+
+      // 当事务完成时
+      transaction.oncomplete = () => {};
+
+      // 当事务出错时
+      transaction.onerror = () => {
+        reject(transaction.error);
+      };
     });
   }
 
@@ -82,10 +108,10 @@ export class IndexedDBHelper {
   static getTasksByDbName(
     dbName: string,
     storeName: string,
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
   ): Promise<{ data: any; index: number }[]> {
     return new Promise((resolve, reject) => {
-      const request = indexedDB.open(dbName, 1);
+      const request = indexedDB.open(dbName, 2);
 
       request.onsuccess = event => {
         const db = (event.target as IDBOpenDBRequest).result;

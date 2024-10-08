@@ -7,10 +7,8 @@ export type UploadHelperOptions = {
   maxConcurrentTasks?: number; // 可选参数
   maxErrors?: number; // 默认最大错误数为 10
   stopOnMaxErrors?: boolean; // 是否在达到最大错误数后停止任务
-  indexedDBConfig?: { open: boolean; name: string };
 };
 
-import { IndexedDBHelper } from './indexDb.helper';
 import { SimpleBehaviorSubject } from './simpleObservable';
 
 // 定义任务参数类型
@@ -36,9 +34,6 @@ export class UploadHelper<T, R> {
   private errorCount = 0; // 当前错误数
   private indexChangeListener: ((index: number) => void) | null = null; // 任务索引变化监听器
   private stopOnMaxErrors: boolean;
-  private enableIndexedDBStorage: boolean;
-  private indexedDBStorageName: string;
-  private indexedDBHelper: IndexedDBHelper | null = null;
   private taskExecutor: AsyncFunction<T, R> | null = null; // 保存任务执行函数
 
   constructor(tasks: T[], options: UploadHelperOptions = {}) {
@@ -46,20 +41,12 @@ export class UploadHelper<T, R> {
       maxConcurrentTasks = navigator.hardwareConcurrency || 4,
       maxErrors = 10,
       stopOnMaxErrors = true,
-      indexedDBConfig = { open: false, name: '' },
     } = options;
     this.maxConcurrentTasks = maxConcurrentTasks;
     this.maxErrors = maxErrors;
     this.stopOnMaxErrors = stopOnMaxErrors;
-    this.enableIndexedDBStorage = indexedDBConfig.open;
-    this.indexedDBStorageName = indexedDBConfig.name;
-    if (this.enableIndexedDBStorage) {
-      this.indexedDBHelper = new IndexedDBHelper(this.indexedDBStorageName, 'tasks');
-    }
+
     this.queue = tasks.map((data, index) => {
-      if (this.indexedDBHelper) {
-        this.indexedDBHelper.addTask({ data, index });
-      }
       return { data, index };
     });
   }
@@ -134,9 +121,6 @@ export class UploadHelper<T, R> {
       .finally(() => {
         this.currentRunningCount.next(this.currentRunningCount.value - 1);
         this.controllers.delete(index);
-        if (this.indexedDBHelper) {
-          this.indexedDBHelper.deleteTask(index);
-        }
         this._currentTaskIndex++;
         this.notifyIndexChange();
       });
@@ -175,9 +159,6 @@ export class UploadHelper<T, R> {
     this.currentRunningCount.next(0);
   }
 
-  static getIndexdDBTasks() {
-    return IndexedDBHelper.getTasksByDbName('1111', 'tasks');
-  }
   setIndexChangeListener(listener: (index: number) => void) {
     this.indexChangeListener = listener;
   }

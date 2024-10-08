@@ -34,19 +34,15 @@ fileInput.addEventListener('change', async event => {
         index,
       };
     });
-    UploadHelper.getIndexdDBTasks().then(value => {
-      console.log(value);
+
+    testPool = new UploadHelper(arr, {
+      indexedDBConfig: {
+        name: '234234',
+        open: true,
+      },
     });
 
-    // testPool = new UploadHelper(arr, {
-    //   indexedDBConfig: {
-    //     name: '1111',
-    //     open: true,
-    //   },
-    // });
 
-
-    return;
     testPool.setIndexChangeListener(value => {
       console.log(value);
     });
