@@ -35,13 +35,7 @@ fileInput.addEventListener('change', async event => {
       };
     });
 
-    testPool = new UploadHelper(arr, {
-      indexedDBConfig: {
-        name: '234234',
-        open: true,
-      },
-    });
-
+    testPool = new UploadHelper(arr);
 
     testPool.setIndexChangeListener(value => {
       console.log(value);
