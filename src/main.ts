@@ -28,9 +28,31 @@ fileInput.addEventListener('change', async event => {
     const { fileChunks, chunkSize } = createFileChunks(file);
     // startTimer(generateFileHash, file);
     const { hash: hashId } = await generateFileHash(file, chunkSize);
-    console.log(fileChunks)
     const arr = fileChunks.map((chunk, index) => {
-      return async ({ signal }) => {
+      return {
+        chunk,
+        index,
+      };
+    });
+    UploadHelper.getIndexdDBTasks().then(value => {
+      console.log(value);
+    });
+
+    // testPool = new UploadHelper(arr, {
+    //   indexedDBConfig: {
+    //     name: '1111',
+    //     open: true,
+    //   },
+    // });
+
+
+    return;
+    testPool.setIndexChangeListener(value => {
+      console.log(value);
+    });
+    testPool
+      .exec(async ({ data, signal }) => {
+        const { chunk, index } = data;
         const fd = new FormData();
         fd.append('fileHash', hashId);
         fd.append('chunkHash', `${hashId}-${index}`);
@@ -48,24 +70,19 @@ fileInput.addEventListener('change', async event => {
           console.log(error);
         });
         return value;
-      };
-    });
-    testPool = new UploadHelper(arr);
-    testPool.setIndexChangeListener(value => {
-      console.log(value);
-    });
-    testPool.exec().then(value => {
-      console.log(value);
-      axios({
-        url: `api/merge`,
-        method: 'post',
-        data: {
-          chunkSize: chunkSize * 1024 * 1024,
-          fileName: file.name,
-          fileHash: hashId,
-        },
+      })
+      .then(value => {
+        console.log(value);
+        axios({
+          url: `api/merge`,
+          method: 'post',
+          data: {
+            chunkSize: chunkSize * 1024 * 1024,
+            fileName: file.name,
+            fileHash: hashId,
+          },
+        });
       });
-    });
     return;
   }
 });

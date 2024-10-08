@@ -3,54 +3,85 @@ enum TaskState {
   PAUSED,
 }
 
+export type UploadHelperOptions = {
+  maxConcurrentTasks?: number; // 可选参数
+  maxErrors?: number; // 默认最大错误数为 10
+  stopOnMaxErrors?: boolean; // 是否在达到最大错误数后停止任务
+  indexedDBConfig?: { open: boolean; name: string };
+};
+
+import { IndexedDBHelper } from './indexDb.helper';
 import { SimpleBehaviorSubject } from './simpleObservable';
 
-// 定义异步函数的类型，返回 Promise 类型
-type AsyncFunction<T> = (props: { signal: AbortSignal }) => Promise<T>;
+// 定义任务参数类型
+export type Task<T> = {
+  data: T; // 任务的数据
+  index: number; // 任务的索引
+};
 
-export class UploadHelper<T> {
-  private queue: { fn: AsyncFunction<T>; index: number }[] = [];
+// 定义实际執行函数的类型
+export type AsyncFunction<T, R> = (props: { data: T; signal: AbortSignal }) => Promise<R>;
+
+export class UploadHelper<T, R> {
+  private queue: Task<T>[] = [];
   private maxConcurrentTasks: number;
-  private results: (T | Error)[] = [];
+  private results: (R | Error)[] = [];
   private currentRunningCount = new SimpleBehaviorSubject(0);
   private taskState: TaskState = TaskState.RUNNING;
   private _currentTaskIndex = 0; // 私有属性，用于记录当前任务索引
-  private controllers: Map<number, { controller: AbortController; fn: AsyncFunction<T> }> =
-    new Map();
+  private controllers: Map<number, AbortController> = new Map();
   private subscription: { unsubscribe: () => void } | null = null;
 
   private maxErrors: number; // 最大允许错误数
   private errorCount = 0; // 当前错误数
   private indexChangeListener: ((index: number) => void) | null = null; // 任务索引变化监听器
   private stopOnMaxErrors: boolean;
+  private enableIndexedDBStorage: boolean;
+  private indexedDBStorageName: string;
+  private indexedDBHelper: IndexedDBHelper | null = null;
+  private taskExecutor: AsyncFunction<T, R> | null = null; // 保存任务执行函数
 
-  constructor(
-    functions: AsyncFunction<T>[],
-    maxConcurrentTasks: number = navigator.hardwareConcurrency || 4,
-    maxErrors: number = 10, // 默认最大错误数为 10
-    stopOnMaxErrors: boolean = true, // 是否在达到最大错误数后停止任务
-  ) {
-    this.queue = functions.map((fn, index) => ({ fn, index }));
+  constructor(tasks: T[], options: UploadHelperOptions = {}) {
+    const {
+      maxConcurrentTasks = navigator.hardwareConcurrency || 4,
+      maxErrors = 10,
+      stopOnMaxErrors = true,
+      indexedDBConfig = { open: false, name: '' },
+    } = options;
     this.maxConcurrentTasks = maxConcurrentTasks;
     this.maxErrors = maxErrors;
     this.stopOnMaxErrors = stopOnMaxErrors;
+    this.enableIndexedDBStorage = indexedDBConfig.open;
+    this.indexedDBStorageName = indexedDBConfig.name;
+    if (this.enableIndexedDBStorage) {
+      this.indexedDBHelper = new IndexedDBHelper(this.indexedDBStorageName, 'tasks');
+    }
+    this.queue = tasks.map((data, index) => {
+      if (this.indexedDBHelper) {
+        this.indexedDBHelper.addTask({ data, index });
+      }
+      return { data, index };
+    });
   }
 
-  // 执行任务队列
-  exec(): Promise<T[]> {
-    return new Promise(resolve => {
+  exec(func: AsyncFunction<T, R>): Promise<R[]> {
+    this.taskExecutor = func;
+    return new Promise((resolve, reject) => {
       this.subscription = this.currentRunningCount.subscribe(() => {
         this.processQueue();
         if (this.currentRunningCount.value === 0 && this.queue.length === 0) {
+          if (this.errorCount > this.maxErrors && this.stopOnMaxErrors) {
+            reject(new Error('Max error limit reached'));
+          } else {
+            resolve(this.results as R[]);
+          }
           this.controllers.clear();
           this.unsubscribe();
-          resolve(this.results as T[]);
         }
       });
     });
   }
 
-  // 处理任务队列
   private processQueue(): void {
     if (
       this.taskState === TaskState.PAUSED ||
@@ -73,17 +104,23 @@ export class UploadHelper<T> {
       this.currentRunningCount.value < this.maxConcurrentTasks &&
       this.queue.length > 0
     ) {
-      const { fn, index } = this.queue.shift()!;
+      const { data, index } = this.queue.shift()!;
       const controller = new AbortController();
-      this.controllers.set(index, { controller, fn });
+      this.controllers.set(index, controller);
       this.currentRunningCount.next(this.currentRunningCount.value + 1);
-      this.runTask(fn, index, controller);
+      if (this.taskExecutor) {
+        this.runTask(data, this.taskExecutor, index, controller);
+      }
     }
   }
 
-  // 运行单个任务
-  private runTask(fn: AsyncFunction<T>, index: number, controller: AbortController): void {
-    fn({ signal: controller.signal })
+  private runTask(
+    data: T,
+    func: AsyncFunction<T, R>,
+    index: number,
+    controller: AbortController,
+  ): void {
+    func({ data, signal: controller.signal })
       .then(result => {
         this.results[index] = result;
       })
@@ -97,6 +134,9 @@ export class UploadHelper<T> {
       .finally(() => {
         this.currentRunningCount.next(this.currentRunningCount.value - 1);
         this.controllers.delete(index);
+        if (this.indexedDBHelper) {
+          this.indexedDBHelper.deleteTask(index);
+        }
         this._currentTaskIndex++;
         this.notifyIndexChange();
       });
@@ -105,24 +145,29 @@ export class UploadHelper<T> {
   // 暂停任务
   pause() {
     this.taskState = TaskState.PAUSED;
-    this.controllers.forEach(({ controller, fn }, index) => {
+    this.controllers.forEach((controller, index) => {
       controller.abort();
-      this.queue.push({ fn, index });
+      // 将中断的任务重新加入队列
+      const queuedTask = this.queue.find(q => q.index === index);
+      if (!queuedTask) {
+        const taskData = this.results[index];
+        if (taskData instanceof Error) {
+          this.queue.push({ data: taskData as T, index });
+        }
+      }
     });
     this.controllers.clear();
   }
 
-  // 恢复任务
   resume() {
-    if (this.taskState === TaskState.PAUSED) {
+    if (this.taskState === TaskState.PAUSED && this.taskExecutor) {
       this.taskState = TaskState.RUNNING;
       this.processQueue();
     }
   }
 
-  // 取消所有任务
   cancelAll() {
-    this.controllers.forEach(({ controller }) => {
+    this.controllers.forEach(controller => {
       controller.abort();
     });
     this.controllers.clear();
@@ -130,7 +175,9 @@ export class UploadHelper<T> {
     this.currentRunningCount.next(0);
   }
 
-  // 设置任务索引变化的监听器
+  static getIndexdDBTasks() {
+    return IndexedDBHelper.getTasksByDbName('1111', 'tasks');
+  }
   setIndexChangeListener(listener: (index: number) => void) {
     this.indexChangeListener = listener;
   }
