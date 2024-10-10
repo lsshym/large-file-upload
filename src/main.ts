@@ -34,8 +34,11 @@ fileInput.addEventListener('change', async event => {
         index,
       };
     });
+    UploadHelper.getDataByDBName('test').then(value => console.log(value));
 
-    testPool = new UploadHelper(arr);
+    testPool = new UploadHelper(arr, {
+      indexedDBName: 'test',
+    });
 
     testPool.setIndexChangeListener(value => {
       console.log(value);

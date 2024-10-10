@@ -7,12 +7,14 @@ large-file-upload is a powerful and flexible library designed to handle the spli
 - [Installation](#installation)
 - [API Reference](#api-reference)
   - [createFileChunks](#createFileChunks)
-  - [generateFileHash](#generatefilehash)
+  - [generateFileHash](#generateFileHash)
   - [UploadHelper](#UploadHelper)
 - [Examples](#examples)
   - [Example: Splitting and Uploading a File](#example-splitting-and-uploading-a-file)
   - [Example: Generating a File Hash in Chunks](#example-generating-a-file-hash-in-chunks)
-  - [Example: Using UploadHelper to Manage File Uploads](#example-using-UploadHelper-to-manage-file-uploads)
+  - [Example: Uploading](#example-uploading)
+  - [Example: Uploading with IndexedDBName and Retrieving IndexedDB Data](#example-uploading-with-indexeddbname-and-retrieving-indexeddb-data)
+  - [Example: Pausing, Resuming, and Canceling Uploads](#example-pausing-resuming-and-canceling-uploads)
 - [License](#license)
 
 ## Installation
@@ -53,106 +55,140 @@ Calculate the hash of the given file.
 
 ### `UploadHelper`
 
-A utility class to manage and control the upload of file chunks with support for concurrency, pausing, resuming, and canceling uploads.
+A utility class to manage and control the upload of file chunks with support for concurrency, pausing, resuming, and canceling uploads. Additionally, `UploadHelper` integrates with `IndexedDB` for handling task persistence and retrying in case of failures.
 
-**Parameters**:
+**Constructor Parameters**:
 
-- `functions: AsyncFunction<T>[]` - An array of async functions representing upload tasks.
-- `maxConcurrentTasks: number` - The maximum number of concurrent upload tasks. Defaults to the number of CPU cores.
-- `maxErrors: number` - The maximum allowed errors before aborting. Defaults to 10.
+- `tasks: T[]` - An array of file chunks to be uploaded.
+- `options: UploadHelperOptions` - Optional settings for controlling the upload:
+  - `maxConcurrentTasks?: number` - Maximum concurrent uploads (default: number of CPU cores).
+  - `maxErrors?: number` - Maximum number of allowed errors before stopping uploads (default: 10).
+  - `stopOnMaxErrors?: boolean` - Whether to stop all uploads after hitting max errors (default: true).
+  - `indexedDBName?: string` - Optional name of the IndexedDB database to store tasks and upload states for persistent uploads.
 
 **Methods**:
 
-- `exec(): Promise<T[]>` - Executes the upload tasks in the queue. 
-- `pause()`: Pauses the ongoing uploads.
-- `resume()`: Resumes the paused uploads.
-- `cancelAll()`: Cancels all ongoing and pending uploads.
+- `exec(func: AsyncFunction<T, R>): Promise<R[]>`: Executes the upload tasks in the queue with the provided async function for processing each chunk.
+- `pause()`: Pauses the ongoing uploads and stores their state in `IndexedDB` (if enabled).
+- `resume()`: Resumes paused uploads from where they left off, reloading tasks from `IndexedDB` (if enabled).
+- `cancelAll()`: Cancels all ongoing and pending uploads and clears the associated `IndexedDB`.
 - `setIndexChangeListener(listener: (index: number) => void)`: Sets a listener to monitor the current task index.
+- `static getDataByDBName<T>(indexedDBName: string): Promise<T[]>`: Static method to retrieve task data from `IndexedDB` for a given database name.
+- `static deleteDataByDBName(indexedDBName: string): Promise<void>`: Static method to delete the `IndexedDB` database by name.
 
-**Note**:
-You must use `await` to wait for the request to complete, otherwise the upload result cannot be obtained.
+**IndexedDB Integration**:
 
-**Returns**:
-
-- A promise that resolves to an array of results for each upload task.
+When you provide an `indexedDBName` as an option, the `UploadHelper` automatically stores the state of each chunk in IndexedDB. This enables you to resume file uploads even after a page reload, system crash, or network failure. Once the uploads are completed successfully, the database is automatically cleared.
 
 ## Examples
 
-### Example: Splitting a File into Chunks
+### Example: Splitting a File
 
-This example demonstrates how to use the `createFileChunks` function to split a file into multiple chunks:
+This example demonstrates how to use the `createFileChunks` function to split a file into multiple chunks.
 
 ```typescript
 import { createFileChunks } from 'large-file-upload';
 
-async function splitFile(file: File) {
-  // Split the file into chunks
+async function splitAndUploadFile(file: File) {
   const { fileChunks, chunkSize } = await createFileChunks(file);
-  console.log('File has been split into the following chunks:');
-  fileChunks.forEach((chunk, index) => {
-    console.log(`Chunk ${index + 1} of size ${chunk.size} bytes`);
-  });
-  console.log('Chunk Size:', chunkSize);
 }
 ```
 
 ### Example: Generating a File Hash in Chunks
 
-This example shows how to generate a hash for a large file using the `generateFileHash` function, which processes the file in chunks:
+This example shows how to generate a hash for a large file using the `generateFileHash` function.
 
 ```typescript
 import { generateFileHash } from 'large-file-upload';
 
 async function hashLargeFile(file: File) {
   const { hash, chunkSize } = await generateFileHash(file);
-
   console.log('Generated hash for the large file:', hash);
   console.log('Chunk Size:', chunkSize);
 }
 ```
 
-### Example: Using UploadHelper to Manage File Uploads
+### Example: Uploading
 
-This example demonstrates how to use the `UploadHelper` to manage and control the upload of file chunks:
+This example demonstrates how to use `UploadHelper`
+
+```typescript
+import { UploadHelper, createFileChunks } from 'large-file-upload';
+
+async function uploadWithoutIndexedDB(file: File) {
+  const { fileChunks } = await createFileChunks(file);
+
+  const uploadHelper = new UploadHelper(fileChunks);
+
+  // Execute the upload tasks with an async function passed to exec
+  await uploadHelper.exec(async ({ data, signal }) => {
+    console.log(`Uploading chunk ${data.index}`);
+    
+    // Simulate upload
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        console.log(`Chunk ${data.index} uploaded`);
+        resolve(true);
+      }, 1000);
+    });
+  });
+
+  console.log('All chunks uploaded without IndexedDB');
+}
+```
+
+### Example: Uploading with IndexedDBName and Retrieving IndexedDB Data
+
+This example demonstrates how to use the `UploadHelper` with the `indexedDBName` option to store task state in IndexedDB. It also shows how to retrieve and delete IndexedDB data.
+
+```typescript
+import { UploadHelper, createFileChunks } from 'large-file-upload';
+
+async function uploadWithIndexedDB(file: File) {
+  const { fileChunks } = await createFileChunks(file);
+
+  const uploadHelper = new UploadHelper(fileChunks, {
+    indexedDBName: 'myUploadDB',  // IndexedDB is used to store task state
+  });
+
+  // Execute the upload tasks with an async function passed to exec
+  await uploadHelper.exec(async ({ data, signal }) => {
+    console.log(`Uploading chunk ${data.index}`);
+    
+    // Simulate upload
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        console.log(`Chunk ${data.index} uploaded`);
+        resolve(true);
+      }, 1000);
+    });
+  }).then(res => res);
+
+  console.log('All chunks uploaded with IndexedDB support');
+
+  // Retrieve data from IndexedDB
+  const indexedDBData = await UploadHelper.getDataByDBName('myUploadDB');
+  console.log('IndexedDB data:', indexedDBData);
+
+  // Delete the IndexedDB data
+  await UploadHelper.deleteDataByDBName('myUploadDB');
+  console.log('IndexedDB cleared');
+}
+```
+
+### Example: Pausing, Resuming, and Canceling Uploads
 
 ```typescript
 import { UploadHelper } from 'large-file-upload';
 
-async function uploadLargeFileChunks(chunks: AsyncFunction[]) {
-  const { fileChunks, chunkSize } = createFileChunks(file);
-  const fileChunksArr = fileChunks.map((chunk, index) => {
-    // signal parameter is optional
-    return async ({ signal }) => {
-      const fd = new FormData();
-      fd.append('chunkFile', chunk);
-      // Must use await to wait for the request to complete, otherwise the upload result cannot be obtained
-      const value = await axios({
-        url: `api/upload`,
-        method: 'post',
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-        data: fd,
-        signal,
-      });
-      return value;
-    };
-  });
-  const uploadTool = new UploadHelper(fileChunksArr); // 3 concurrent uploads
+// Pausing the uploads
+uploadHelper.pause();
 
-  // Set a listener to monitor the progress
-  uploadTool.setIndexChangeListener(index => {
-    console.log(`Currently processing chunk index: ${index}`);
-  });
+// Resuming the uploads
+uploadHelper.resume();
 
-  // Execute the upload tasks
-  try {
-    const results = await uploadTool.exec().then(res => res);
-    console.log('All chunks have been uploaded successfully:', results);
-  } catch (error) {
-    console.error('Error during file upload:', error);
-  }
-}
+// Canceling all ongoing and pending uploads
+uploadHelper.cancelAll();
 ```
 
 ## License

@@ -7,8 +7,10 @@ export type UploadHelperOptions = {
   maxConcurrentTasks?: number; // 可选参数
   maxErrors?: number; // 默认最大错误数为 10
   stopOnMaxErrors?: boolean; // 是否在达到最大错误数后停止任务
+  indexedDBName?: string;
 };
 
+import { IndexedDBHelper } from './indexdDB.helper';
 import { SimpleBehaviorSubject } from './simpleObservable';
 
 // 定义任务参数类型
@@ -35,20 +37,33 @@ export class UploadHelper<T, R> {
   private indexChangeListener: ((index: number) => void) | null = null; // 任务索引变化监听器
   private stopOnMaxErrors: boolean;
   private taskExecutor: AsyncFunction<T, R> | null = null; // 保存任务执行函数
-
+  private indexedDBName: string = '';
+  private indexedDBHelper: IndexedDBHelper<{ index: number }> | null = null;
   constructor(tasks: T[], options: UploadHelperOptions = {}) {
     const {
       maxConcurrentTasks = navigator.hardwareConcurrency || 4,
       maxErrors = 10,
       stopOnMaxErrors = true,
+      indexedDBName = '',
     } = options;
     this.maxConcurrentTasks = maxConcurrentTasks;
     this.maxErrors = maxErrors;
     this.stopOnMaxErrors = stopOnMaxErrors;
-
-    this.queue = tasks.map((data, index) => {
-      return { data, index };
-    });
+    this.indexedDBName = indexedDBName;
+    if (this.indexedDBName) {
+      this.indexedDBHelper = new IndexedDBHelper(this.indexedDBName, 'upload');
+      this.indexedDBHelper.clear();
+      this.queue = tasks.map((data, index) => {
+        if (this.indexedDBHelper) {
+          this.indexedDBHelper.add({ index });
+        }
+        return { data, index };
+      });
+    } else {
+      this.queue = tasks.map((data, index) => {
+        return { data, index };
+      });
+    }
   }
 
   exec(func: AsyncFunction<T, R>): Promise<R[]> {
@@ -61,6 +76,9 @@ export class UploadHelper<T, R> {
             reject(new Error('Max error limit reached'));
           } else {
             resolve(this.results as R[]);
+            if (this.indexedDBName) {
+              IndexedDBHelper.deleteDatabase(this.indexedDBName);
+            }
           }
           this.controllers.clear();
           this.unsubscribe();
@@ -123,6 +141,7 @@ export class UploadHelper<T, R> {
         this.controllers.delete(index);
         this._currentTaskIndex++;
         this.notifyIndexChange();
+        this.indexedDBHelper?.delete(index);
       });
   }
 
@@ -156,6 +175,7 @@ export class UploadHelper<T, R> {
     });
     this.controllers.clear();
     this.queue = [];
+    IndexedDBHelper.deleteDatabase(this.indexedDBName);
     this.currentRunningCount.next(0);
   }
 
@@ -176,5 +196,11 @@ export class UploadHelper<T, R> {
       this.subscription.unsubscribe();
       this.subscription = null;
     }
+  }
+  static getDataByDBName<T>(indexedDBName: string): Promise<T[]> {
+    return IndexedDBHelper.getDataByDBName<T>(indexedDBName, 'upload');
+  }
+  static deleteDataByDBName(indexedDBName: string): Promise<void> {
+    return IndexedDBHelper.deleteDatabase(indexedDBName);
   }
 }
