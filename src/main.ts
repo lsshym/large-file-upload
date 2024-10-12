@@ -34,12 +34,9 @@ fileInput.addEventListener('change', async event => {
         index,
       };
     });
-    UploadHelper.getDataByDBName('test').then(value => console.log(value));
-
-    testPool = new UploadHelper(arr, {
-      indexedDBName: 'test',
-    });
-
+    // UploadHelper.getDataByDBName('test').then(value => console.log(value));
+    console.time('testPool');
+    testPool = new UploadHelper(arr);
     testPool.setIndexChangeListener(value => {
       console.log(value);
     });
@@ -65,7 +62,7 @@ fileInput.addEventListener('change', async event => {
         return value;
       })
       .then(value => {
-        console.log(value);
+        console.timeEnd('testPool');
         axios({
           url: `api/merge`,
           method: 'post',
@@ -79,6 +76,9 @@ fileInput.addEventListener('change', async event => {
     return;
   }
 });
+// testPool: 43459.18896484375 ms
+// testPool: 44107.1259765625 ms
+// testPool: 39379.501953125 ms
 btnPause.addEventListener('click', () => {
   testPool.pause();
 });
