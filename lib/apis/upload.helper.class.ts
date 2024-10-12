@@ -41,7 +41,7 @@ export class UploadHelper<T, R> {
   private indexedDBHelper: IndexedDBHelper<{ index: number }> | null = null;
   constructor(tasks: T[], options: UploadHelperOptions = {}) {
     const {
-      maxConcurrentTasks = navigator.hardwareConcurrency || 4,
+      maxConcurrentTasks = 5,
       maxErrors = 10,
       stopOnMaxErrors = true,
       indexedDBName = '',
