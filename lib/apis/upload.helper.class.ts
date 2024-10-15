@@ -32,8 +32,6 @@ export class UploadHelper<T, R> {
   > = new Map();
   private taskExecutor!: AsyncFunction<T, R>; // 任务执行函数，确保已定义
   private resolve!: (value: (R | Error)[]) => void; // 保存 resolve
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  private reject!: (reason?: any) => void; // 保存 reject
   constructor(tasksData: T[], options: UploadHelperOptions = {}) {
     const { maxConcurrentTasks = 5, indexedDBName = '' } = options;
     this.maxConcurrentTasks = maxConcurrentTasks;
@@ -52,17 +50,15 @@ export class UploadHelper<T, R> {
     this.taskExecutor = func;
     this.taskState = TaskState.RUNNING;
 
-    return new Promise<(R | Error)[]>((resolve, reject) => {
+    return new Promise<(R | Error)[]>(resolve => {
       // 启动初始任务
       this.resolve = resolve;
-      this.reject = reject;
       for (let i = 0; i < this.maxConcurrentTasks; i++) {
         this.next();
       }
     });
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private next(): void {
     if (this.taskState !== TaskState.RUNNING) {
       return;
