@@ -38,29 +38,33 @@ fileInput.addEventListener('change', async event => {
         index,
       };
     });
+    console.log('arr',arr.length)
     // UploadHelper.getDataByDBName('test').then(value => console.log(value));
     // console.time('pLimitPool');
     // const uploadPromises = arr.map(({ chunk, index }) =>
-    //   limit(async () => {
+    //   limit(() => {
     //     const fd = new FormData();
     //     fd.append('fileHash', hashId);
     //     fd.append('chunkHash', `${hashId}-${index}`);
     //     fd.append('fileName', file.name);
     //     fd.append('chunkFile', chunk);
 
-    //     await axios({
+    //     axios({
     //       url: `api/upload`,
     //       method: 'post',
     //       headers: {
     //         'Content-Type': 'multipart/form-data',
     //       },
     //       data: fd,
+    //     }).then(value => {
+    //       return value;
     //     });
     //   }),
     // );
 
     // Promise.all(uploadPromises)
-    //   .then(() => {
+    //   .then(value => {
+    //     console.log(value);
     //     console.timeEnd('pLimitPool');
     //     axios({
     //       url: `api/merge`,
@@ -76,45 +80,45 @@ fileInput.addEventListener('change', async event => {
     //     console.log(error);
     //   });
     // return;
-    // console.time('testPool');
-    // testPool = new UploadHelper(arr);
+    console.time('testPool');
+    testPool = new UploadHelper(arr);
     // testPool.setIndexChangeListener(value => {
     //   console.log(value);
     // });
-    // testPool
-    //   .exec(async ({ data, signal }) => {
-    //     const { chunk, index } = data;
-    //     const fd = new FormData();
-    //     fd.append('fileHash', hashId);
-    //     fd.append('chunkHash', `${hashId}-${index}`);
-    //     fd.append('fileName', file.name);
-    //     fd.append('chunkFile', chunk);
-    //     const value = await axios({
-    //       url: `api/upload`,
-    //       method: 'post',
-    //       headers: {
-    //         'Content-Type': 'multipart/form-data',
-    //       },
-    //       data: fd, // 确保上传的内容正确传递
-    //       signal,
-    //     }).catch(error => {
-    //       console.log(error);
-    //     });
-    //     return value;
-    //   })
-    //   .then(value => {
-    //     console.timeEnd('testPool');
-    //     axios({
-    //       url: `api/merge`,
-    //       method: 'post',
-    //       data: {
-    //         chunkSize: chunkSize * 1024 * 1024,
-    //         fileName: file.name,
-    //         fileHash: hashId,
-    //       },
-    //     });
-    //   });
-    // return;
+    testPool
+      .exec(async ({ data, signal }) => {
+        const { chunk, index } = data;
+        const fd = new FormData();
+        fd.append('fileHash', hashId);
+        fd.append('chunkHash', `${hashId}-${index}`);
+        fd.append('fileName', file.name);
+        fd.append('chunkFile', chunk);
+        const value = await axios({
+          url: `api/upload`,
+          method: 'post',
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          },
+          data: fd, // 确保上传的内容正确传递
+          signal,
+        }).catch(error => {
+          console.log(error);
+        });
+        return value;
+      })
+      .then(value => {
+        console.timeEnd('testPool');
+        axios({
+          url: `api/merge`,
+          method: 'post',
+          data: {
+            chunkSize: chunkSize * 1024 * 1024,
+            fileName: file.name,
+            fileHash: hashId,
+          },
+        });
+      });
+    return;
     console.time('limitConcurrencyPool');
     const uploadTasks = arr.map(({ chunk, index }) => () => {
       const fd = new FormData();
