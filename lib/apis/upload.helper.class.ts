@@ -1,206 +1,207 @@
+import YoctoQueue from 'yocto-queue';
+
 enum TaskState {
   RUNNING,
   PAUSED,
 }
 
 export type UploadHelperOptions = {
-  maxConcurrentTasks?: number; // 可选参数
-  maxErrors?: number; // 默认最大错误数为 10
-  stopOnMaxErrors?: boolean; // 是否在达到最大错误数后停止任务
+  maxConcurrentTasks?: number; // 可选参数，默认并发数为 5
   indexedDBName?: string;
 };
 
-import { IndexedDBHelper } from './indexdDB.helper';
-import { SimpleBehaviorSubject } from './simpleObservable';
-
-// 定义任务参数类型
 export type Task<T> = {
   data: T; // 任务的数据
   index: number; // 任务的索引
 };
 
-// 定义实际執行函数的类型
 export type AsyncFunction<T, R> = (props: { data: T; signal: AbortSignal }) => Promise<R>;
 
 export class UploadHelper<T, R> {
-  private queue: Task<T>[] = [];
+  private queue: YoctoQueue<Task<T>> = new YoctoQueue<Task<T>>(); // 使用队列管理任务
   private maxConcurrentTasks: number;
   private results: (R | Error)[] = [];
-  private currentRunningCount = new SimpleBehaviorSubject(0);
+  private activeCount = 0; // 当前正在运行的任务数
   private taskState: TaskState = TaskState.RUNNING;
-  private _currentTaskIndex = 0; // 私有属性，用于记录当前任务索引
-  private controllers: Map<number, AbortController> = new Map();
-  private subscription: { unsubscribe: () => void } | null = null;
-
-  private maxErrors: number; // 最大允许错误数
-  private errorCount = 0; // 当前错误数
-  private indexChangeListener: ((index: number) => void) | null = null; // 任务索引变化监听器
-  private stopOnMaxErrors: boolean;
-  private taskExecutor: AsyncFunction<T, R> | null = null; // 保存任务执行函数
-  private indexedDBName: string = '';
-  private indexedDBHelper: IndexedDBHelper<{ index: number }> | null = null;
-  constructor(tasks: T[], options: UploadHelperOptions = {}) {
-    const {
-      maxConcurrentTasks = navigator.hardwareConcurrency || 4,
-      maxErrors = 10,
-      stopOnMaxErrors = true,
-      indexedDBName = '',
-    } = options;
+  private currentRuningTasksMap: Map<
+    number,
+    {
+      task: Task<T>;
+      controller: AbortController;
+    }
+  > = new Map();
+  private taskExecutor!: AsyncFunction<T, R>; // 任务执行函数，确保已定义
+  private resolve!: (value: (R | Error)[]) => void; // 保存 resolve
+  constructor(tasksData: T[], options: UploadHelperOptions = {}) {
+    const { maxConcurrentTasks = 5, indexedDBName = '' } = options;
     this.maxConcurrentTasks = maxConcurrentTasks;
-    this.maxErrors = maxErrors;
-    this.stopOnMaxErrors = stopOnMaxErrors;
-    this.indexedDBName = indexedDBName;
-    if (this.indexedDBName) {
-      this.indexedDBHelper = new IndexedDBHelper(this.indexedDBName, 'upload');
-      this.indexedDBHelper.clear();
-      this.queue = tasks.map((data, index) => {
-        if (this.indexedDBHelper) {
-          this.indexedDBHelper.add({ index });
-        }
-        return { data, index };
-      });
-    } else {
-      this.queue = tasks.map((data, index) => {
-        return { data, index };
-      });
+
+    // 初始化任务队列
+    tasksData.forEach((data, index) => {
+      this.queue.enqueue({ data, index });
+    });
+
+    if (indexedDBName) {
+      // 如果需要使用 IndexedDB，这里可以初始化 IndexedDBHelper
     }
   }
 
-  exec(func: AsyncFunction<T, R>): Promise<R[]> {
+  exec(func: AsyncFunction<T, R>): Promise<(R | Error)[]> {
     this.taskExecutor = func;
-    return new Promise((resolve, reject) => {
-      this.subscription = this.currentRunningCount.subscribe(() => {
-        this.processQueue();
-        if (this.currentRunningCount.value === 0 && this.queue.length === 0) {
-          if (this.errorCount > this.maxErrors && this.stopOnMaxErrors) {
-            reject(new Error('Max error limit reached'));
-          } else {
-            resolve(this.results as R[]);
-            if (this.indexedDBName) {
-              IndexedDBHelper.deleteDatabase(this.indexedDBName);
-            }
-          }
-          this.controllers.clear();
-          this.unsubscribe();
-        }
-      });
+    this.taskState = TaskState.RUNNING;
+
+    return new Promise<(R | Error)[]>(resolve => {
+      // 启动初始任务
+      this.resolve = resolve;
+      for (let i = 0; i < this.maxConcurrentTasks; i++) {
+        this.next();
+      }
     });
   }
 
-  private processQueue(): void {
-    if (
-      this.taskState === TaskState.PAUSED ||
-      this.currentRunningCount.value >= this.maxConcurrentTasks
-    ) {
+  private next(): void {
+    if (this.taskState !== TaskState.RUNNING) {
       return;
     }
-
-    if (this.queue.length === 0 && this.currentRunningCount.value === 0) {
+    // 如果所有任务都已完成，且没有正在运行的任务，结束执行
+    if (this.queue.size === 0 && this.activeCount === 0) {
+      this.resolve(this.results);
       return;
     }
-
-    if (this.errorCount > this.maxErrors && this.stopOnMaxErrors) {
-      this.cancelAll();
-      return;
-    }
-
-    while (
-      this.taskState === TaskState.RUNNING &&
-      this.currentRunningCount.value < this.maxConcurrentTasks &&
-      this.queue.length > 0
-    ) {
-      const { data, index } = this.queue.shift()!;
-      const controller = new AbortController();
-      this.controllers.set(index, controller);
-      this.currentRunningCount.next(this.currentRunningCount.value + 1);
-      if (this.taskExecutor) {
-        this.runTask(data, this.taskExecutor, index, controller);
+    // 如果当前运行的任务数小于最大并发数，启动下一个任务
+    if (this.activeCount < this.maxConcurrentTasks && this.queue.size > 0) {
+      const task = this.queue.dequeue();
+      if (task) {
+        this.runTask(task).finally(() => {
+          this.next();
+        });
       }
     }
   }
 
-  private runTask(
-    data: T,
-    func: AsyncFunction<T, R>,
-    index: number,
-    controller: AbortController,
-  ): void {
-    func({ data, signal: controller.signal })
-      .then(result => {
-        this.results[index] = result;
-      })
-      .catch(error => {
-        this.results[index] = error;
-        this.errorCount++;
-        if (this.errorCount > this.maxErrors && this.stopOnMaxErrors) {
-          this.cancelAll();
-        }
-      })
-      .finally(() => {
-        this.currentRunningCount.next(this.currentRunningCount.value - 1);
-        this.controllers.delete(index);
-        this._currentTaskIndex++;
-        this.notifyIndexChange();
-        this.indexedDBHelper?.delete(index);
-      });
+  private async runTask(task: Task<T>): Promise<void> {
+    this.activeCount++;
+    const controller = new AbortController();
+    this.currentRuningTasksMap.set(task.index, {
+      controller,
+      task,
+    });
+    try {
+      const result = await this.taskExecutor({ data: task.data, signal: controller.signal });
+      this.results[task.index] = result;
+    } catch (error) {
+      this.results[task.index] = error as Error;
+    } finally {
+      this.currentRuningTasksMap.delete(task.index);
+      this.activeCount--;
+    }
   }
 
-  // 暂停任务
-  pause() {
+  pause(): void {
+    if (this.taskState !== TaskState.RUNNING) {
+      return;
+    }
     this.taskState = TaskState.PAUSED;
-    this.controllers.forEach((controller, index) => {
-      controller.abort();
-      // 将中断的任务重新加入队列
-      const queuedTask = this.queue.find(q => q.index === index);
-      if (!queuedTask) {
-        const taskData = this.results[index];
-        if (taskData instanceof Error) {
-          this.queue.push({ data: taskData as T, index });
-        }
-      }
-    });
-    this.controllers.clear();
-  }
-
-  resume() {
-    if (this.taskState === TaskState.PAUSED && this.taskExecutor) {
-      this.taskState = TaskState.RUNNING;
-      this.processQueue();
-    }
-  }
-
-  cancelAll() {
-    this.controllers.forEach(controller => {
+    this.currentRuningTasksMap.forEach(({ task, controller }) => {
+      this.queue.enqueue(task);
       controller.abort();
     });
-    this.controllers.clear();
-    this.queue = [];
-    IndexedDBHelper.deleteDatabase(this.indexedDBName);
-    this.currentRunningCount.next(0);
+    this.currentRuningTasksMap.clear();
   }
 
-  setIndexChangeListener(listener: (index: number) => void) {
-    this.indexChangeListener = listener;
-  }
-
-  // 通知任务索引变化
-  private notifyIndexChange() {
-    if (this.indexChangeListener) {
-      this.indexChangeListener(this._currentTaskIndex);
+  resume(): Promise<R[]> | void {
+    if (this.taskState !== TaskState.PAUSED) {
+      return;
     }
-  }
-
-  // 取消订阅
-  unsubscribe() {
-    if (this.subscription) {
-      this.subscription.unsubscribe();
-      this.subscription = null;
+    this.taskState = TaskState.RUNNING;
+    // 重新启动任务调度
+    for (let i = 0; i < this.maxConcurrentTasks; i++) {
+      this.next();
     }
-  }
-  static getDataByDBName<T>(indexedDBName: string): Promise<T[]> {
-    return IndexedDBHelper.getDataByDBName<T>(indexedDBName, 'upload');
-  }
-  static deleteDataByDBName(indexedDBName: string): Promise<void> {
-    return IndexedDBHelper.deleteDatabase(indexedDBName);
   }
 }
+
+// enum TaskState {
+//   RUNNING,
+//   PAUSED,
+// }
+
+// export type UploadHelperOptions = {
+//   maxConcurrentTasks?: number; // 可选参数
+// };
+
+// // 定义任务参数类型
+// export type Task<T> = {
+//   data: T; // 任务的数据
+//   index: number; // 任务的索引
+// };
+
+// // 定义实际執行函数的类型
+// export type AsyncFunction<T, R> = (props: { data: T; signal: AbortSignal }) => Promise<R>;
+
+// export class UploadHelper<T, R> {
+//   private queue = new YoctoQueue<Task<T>>();
+//   private maxConcurrentTasks: number;
+//   private results: (R | Error)[] = [];
+//   private currentRunningCount = 0;
+//   private taskState: TaskState = TaskState.RUNNING;
+//   private _currentTaskIndex = 0; // 私有属性，用于记录当前任务索引
+//   private controllers: Map<number, AbortController> = new Map();
+//   private subscription: { unsubscribe: () => void } | null = null;
+//   private indexChangeListener: ((index: number) => void) | null = null; // 任务索引变化监听器
+//   private taskExecutor: AsyncFunction<T, R> | undefined = undefined; // 保存任务执行函数
+
+//   private resolve: (value: R[] | PromiseLike<R[]>) => void;
+//   constructor(tasks: T[], options: UploadHelperOptions = {}) {
+//     const { maxConcurrentTasks = 5 } = options;
+//     this.maxConcurrentTasks = maxConcurrentTasks;
+//     tasks.forEach((data, index) => {
+//       this.queue.enqueue({ data, index });
+//     });
+//   }
+
+//   exec(func: AsyncFunction<T, R>): Promise<R[]> {
+//     this.taskExecutor = func;
+//     this.taskState = TaskState.RUNNING;
+//     return new Promise<R[]>((resolve, reject) => {
+//       for (let i = 0; i < this.maxConcurrentTasks; i++) {
+//         this.resumeNext(resolve, reject);
+//       }
+//     });
+//   }
+
+//   private resumeNext(resolve: (value: R[]) => void, reject: (reason?: any) => void): void {
+//     // 任务全部完成
+//     if (this.queue.size === 0 && this.currentRunningCount === 0) {
+//           if (this.queue.size === 0 && this.activeCount === 0) {
+//             resolve(this.results);
+//             return;
+//           }
+//       return;
+//     }
+//     if (this.currentRunningCount < this.maxConcurrentTasks && this.queue.size > 0) {
+//       const { data, index } = this.queue.dequeue();
+//       this.runTask(data, index);
+//       this.currentRunningCount++;
+//     }
+//   }
+
+//   private async runTask(data: T, index: number): void {
+//     const controller = new AbortController();
+//     this.taskExecutor({ data, signal: controller.signal })
+//       .then(result => {
+//         this.results[index] = result;
+//       })
+//       .catch(error => {
+//         this.results[index] = error;
+//       })
+//       .finally(() => {
+//         this.controllers.delete(index);
+//         this.next();
+//       });
+//   }
+//   private next() {
+//     this.currentRunningCount--;
+//     this.resumeNext();
+//   }
+// }
