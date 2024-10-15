@@ -1,5 +1,5 @@
 import YoctoQueue from 'yocto-queue';
-
+// 终于搞了一版无比满意的
 enum TaskState {
   RUNNING,
   PAUSED,
@@ -120,88 +120,3 @@ export class UploadHelper<T, R> {
     }
   }
 }
-
-// enum TaskState {
-//   RUNNING,
-//   PAUSED,
-// }
-
-// export type UploadHelperOptions = {
-//   maxConcurrentTasks?: number; // 可选参数
-// };
-
-// // 定义任务参数类型
-// export type Task<T> = {
-//   data: T; // 任务的数据
-//   index: number; // 任务的索引
-// };
-
-// // 定义实际執行函数的类型
-// export type AsyncFunction<T, R> = (props: { data: T; signal: AbortSignal }) => Promise<R>;
-
-// export class UploadHelper<T, R> {
-//   private queue = new YoctoQueue<Task<T>>();
-//   private maxConcurrentTasks: number;
-//   private results: (R | Error)[] = [];
-//   private currentRunningCount = 0;
-//   private taskState: TaskState = TaskState.RUNNING;
-//   private _currentTaskIndex = 0; // 私有属性，用于记录当前任务索引
-//   private controllers: Map<number, AbortController> = new Map();
-//   private subscription: { unsubscribe: () => void } | null = null;
-//   private indexChangeListener: ((index: number) => void) | null = null; // 任务索引变化监听器
-//   private taskExecutor: AsyncFunction<T, R> | undefined = undefined; // 保存任务执行函数
-
-//   private resolve: (value: R[] | PromiseLike<R[]>) => void;
-//   constructor(tasks: T[], options: UploadHelperOptions = {}) {
-//     const { maxConcurrentTasks = 5 } = options;
-//     this.maxConcurrentTasks = maxConcurrentTasks;
-//     tasks.forEach((data, index) => {
-//       this.queue.enqueue({ data, index });
-//     });
-//   }
-
-//   exec(func: AsyncFunction<T, R>): Promise<R[]> {
-//     this.taskExecutor = func;
-//     this.taskState = TaskState.RUNNING;
-//     return new Promise<R[]>((resolve, reject) => {
-//       for (let i = 0; i < this.maxConcurrentTasks; i++) {
-//         this.resumeNext(resolve, reject);
-//       }
-//     });
-//   }
-
-//   private resumeNext(resolve: (value: R[]) => void, reject: (reason?: any) => void): void {
-//     // 任务全部完成
-//     if (this.queue.size === 0 && this.currentRunningCount === 0) {
-//           if (this.queue.size === 0 && this.activeCount === 0) {
-//             resolve(this.results);
-//             return;
-//           }
-//       return;
-//     }
-//     if (this.currentRunningCount < this.maxConcurrentTasks && this.queue.size > 0) {
-//       const { data, index } = this.queue.dequeue();
-//       this.runTask(data, index);
-//       this.currentRunningCount++;
-//     }
-//   }
-
-//   private async runTask(data: T, index: number): void {
-//     const controller = new AbortController();
-//     this.taskExecutor({ data, signal: controller.signal })
-//       .then(result => {
-//         this.results[index] = result;
-//       })
-//       .catch(error => {
-//         this.results[index] = error;
-//       })
-//       .finally(() => {
-//         this.controllers.delete(index);
-//         this.next();
-//       });
-//   }
-//   private next() {
-//     this.currentRunningCount--;
-//     this.resumeNext();
-//   }
-// }
