@@ -19,7 +19,8 @@
     "dev": "vite",
     "build": "vite build && start stats.html",
     "lint": "eslint",
-    "lint:fix": "eslint --fix"
+    "lint:fix": "eslint --fix",
+    "test": "jest"
   },
   "devDependencies": {
     "@eslint/js": "^9.10.0",

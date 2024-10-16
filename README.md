@@ -62,8 +62,6 @@ A utility class to manage and control the upload of file chunks with support for
 - `tasks: T[]` - An array of file chunks to be uploaded.
 - `options: UploadHelperOptions` - Optional settings for controlling the upload:
   - `maxConcurrentTasks?: number` - Maximum concurrent uploads (default: number of CPU cores).
-  - `maxErrors?: number` - Maximum number of allowed errors before stopping uploads (default: 10).
-  - `stopOnMaxErrors?: boolean` - Whether to stop all uploads after hitting max errors (default: true).
   - `indexedDBName?: string` - Optional name of the IndexedDB database to store tasks and upload states for persistent uploads.
 
 **Methods**:

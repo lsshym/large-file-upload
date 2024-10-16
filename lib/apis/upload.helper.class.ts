@@ -92,25 +92,23 @@ export class UploadHelper<T, R> {
       task,
     });
 
-    this.taskExecutor({ data: task.data, signal: controller.signal })
-      .then(result => {
-        this.results[task.index] = result;
-        this.progressCallback(++this.progress);
-      })
-      .catch(error => {
-        if (retries > 0) {
-          setTimeout(() => {
-            this.runTask(task, retries - 1);
-          }, this.retryDelay);
-        } else {
-          this.results[task.index] = error as Error;
-          this.errorTasks.push(task);
-        }
-      })
-      .finally(() => {
-        this.currentRuningTasksMap.delete(task.index);
-        this.activeCount--;
-      });
+    try {
+      const result = await this.taskExecutor({ data: task.data, signal: controller.signal });
+      this.results[task.index] = result;
+      this.progressCallback(++this.progress);
+    } catch (error) {
+      if (retries > 0) {
+        await new Promise(resolve => setTimeout(resolve, this.retryDelay));
+        await this.runTask(task, retries - 1);
+        return;
+      } else {
+        this.results[task.index] = error as Error;
+        this.errorTasks.push(task);
+      }
+    } finally {
+      this.currentRuningTasksMap.delete(task.index);
+      this.activeCount--;
+    }
   }
 
   pause(): void {
