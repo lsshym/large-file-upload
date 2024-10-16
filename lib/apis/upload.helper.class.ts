@@ -1,5 +1,5 @@
 import YoctoQueue from 'yocto-queue';
-
+// 终于搞了一版无比满意的
 enum TaskState {
   RUNNING,
   PAUSED,
@@ -156,3 +156,5 @@ export class UploadHelper<T, R> {
     this.progressCallback = callback;
   }
 }
+}
+
