@@ -156,5 +156,3 @@ export class UploadHelper<T, R> {
     this.progressCallback = callback;
   }
 }
-}
-
