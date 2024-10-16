@@ -132,6 +132,18 @@ export class UploadHelper<T, R> {
       this.next();
     }
   }
+  retryTasks(tasks: Task<T>[]): Promise<{ results: (R | Error)[]; errorTasks: Task<T>[] }> {
+    tasks.forEach(task => {
+      this.queue.enqueue(task);
+    });
+    this.taskState = TaskState.RUNNING;
+    return new Promise(resolve => {
+      this.resolve = resolve;
+      for (let i = 0; i < this.maxConcurrentTasks; i++) {
+        this.next();
+      }
+    });
+  }
   clear(): void {
     this.taskState = TaskState.COMPLETED;
     this.currentRuningTasksMap.forEach(({ controller }) => {
