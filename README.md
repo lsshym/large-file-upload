@@ -1,25 +1,24 @@
 # large-file-upload
 
-large-file-upload is a powerful and flexible library designed to handle the splitting, processing, and uploading of large files in chunks.
+`large-file-upload` is a powerful and flexible library designed to handle the splitting, processing, and uploading of large files in chunks.
 
 ## Table of Contents
 
 - [Installation](#installation)
 - [API Reference](#api-reference)
-  - [createFileChunks](#createFileChunks)
-  - [generateFileHash](#generateFileHash)
-  - [UploadHelper](#UploadHelper)
+  - [`createFileChunks`](#createfilechunks)
+  - [`generateFileHash`](#generatefilehash)
+  - [`UploadHelper`](#uploadhelper)
 - [Examples](#examples)
-  - [Example: Splitting and Uploading a File](#example-splitting-and-uploading-a-file)
+  - [Example: Splitting a File](#example-splitting-a-file)
   - [Example: Generating a File Hash in Chunks](#example-generating-a-file-hash-in-chunks)
   - [Example: Uploading](#example-uploading)
-  - [Example: Uploading with IndexedDBName and Retrieving IndexedDB Data](#example-uploading-with-indexeddbname-and-retrieving-indexeddb-data)
   - [Example: Pausing, Resuming, and Canceling Uploads](#example-pausing-resuming-and-canceling-uploads)
 - [License](#license)
 
 ## Installation
 
-To install the FileChunksTools library, use the following command:
+To install the `large-file-upload` library, use the following command:
 
 ```bash
 npm install large-file-upload
@@ -42,41 +41,69 @@ Splits the given file into multiple chunks of the specified size.
 
 ### `generateFileHash`
 
-Calculate the hash of the given file.
+Calculates the hash of the given file in chunks.
 
 **Parameters**:
 
-- `file: File`
-- `customChunkSize?: number`
+- `file: File` - The file for which to generate the hash.
+- `customChunkSize?: number` - Custom chunk size (in MB) for hashing. Optional.
 
 **Returns**:
 
-- `Promise<{ hash: string, chunkSize: number }>` - A promise that resolves to an object containing the hash and chunk size.
+- `Promise<{ hash: string; chunkSize: number }>` - A promise that resolves to an object containing the hash and chunk size.
 
 ### `UploadHelper`
 
-A utility class to manage and control the upload of file chunks with support for concurrency, pausing, resuming, and canceling uploads. Additionally, `UploadHelper` integrates with `IndexedDB` for handling task persistence and retrying in case of failures.
+A utility class to manage and control the upload of file chunks with support for concurrency, retries, pausing, resuming, and canceling uploads.
+
+**Type Parameters**:
+
+- `T` - The type of task data.
+- `R` - The type of result returned by the task executor function.
 
 **Constructor Parameters**:
 
-- `tasks: T[]` - An array of file chunks to be uploaded.
-- `options: UploadHelperOptions` - Optional settings for controlling the upload:
-  - `maxConcurrentTasks?: number` - Maximum concurrent uploads (default: number of CPU cores).
-  - `indexedDBName?: string` - Optional name of the IndexedDB database to store tasks and upload states for persistent uploads.
+- `tasksData: T[]` - An array of task data (e.g., file chunks) to be uploaded.
+- `options?: UploadHelperOptions` - Optional settings for controlling the upload:
+  - `maxConcurrentTasks?: number` - Maximum number of concurrent uploads (default: 5).
+  - `maxRetries?: number` - Maximum number of retries for a failed task (default: 3).
+  - `retryDelay?: number` - Delay between retries in milliseconds (default: 1000 ms).
 
 **Methods**:
 
-- `exec(func: AsyncFunction<T, R>): Promise<R[]>`: Executes the upload tasks in the queue with the provided async function for processing each chunk.
-- `pause()`: Pauses the ongoing uploads and stores their state in `IndexedDB` (if enabled).
-- `resume()`: Resumes paused uploads from where they left off, reloading tasks from `IndexedDB` (if enabled).
-- `cancelAll()`: Cancels all ongoing and pending uploads and clears the associated `IndexedDB`.
-- `setIndexChangeListener(listener: (index: number) => void)`: Sets a listener to monitor the current task index.
-- `static getDataByDBName<T>(indexedDBName: string): Promise<T[]>`: Static method to retrieve task data from `IndexedDB` for a given database name.
-- `static deleteDataByDBName(indexedDBName: string): Promise<void>`: Static method to delete the `IndexedDB` database by name.
+- `run(func: AsyncFunction<T, R>): Promise<{ results: (R | Error)[]; errorTasks: Task<T>[] }>`: Executes the upload tasks in the queue with the provided async function for processing each chunk.
 
-**IndexedDB Integration**:
+- `pause(): void`: Pauses the ongoing uploads. Ongoing tasks are aborted, and pending tasks remain in the queue.
 
-When you provide an `indexedDBName` as an option, the `UploadHelper` automatically stores the state of each chunk in IndexedDB. This enables you to resume file uploads even after a page reload, system crash, or network failure. Once the uploads are completed successfully, the database is automatically cleared.
+- `resume(): void`: Resumes paused uploads from where they left off.
+
+- `retryTasks(tasks: Task<T>[]): Promise<{ results: (R | Error)[]; errorTasks: Task<T>[] }>`: Retries the specified tasks.
+
+- `clear(): void`: Cancels all ongoing and pending uploads and clears the task queue.
+
+- `onProgressChange(callback: (index: number) => void): void`: Sets a callback function to monitor the progress of the tasks.
+
+**Types**:
+
+- `UploadHelperOptions`: Configuration options for `UploadHelper`.
+  - `maxConcurrentTasks?: number` - Maximum number of concurrent tasks.
+  - `maxRetries?: number` - Maximum number of retries for each task.
+  - `retryDelay?: number` - Delay between retries in milliseconds.
+
+- `Task<T>`: Represents a task in the queue.
+  - `data: T` - The data associated with the task.
+  - `index: number` - The index of the task.
+
+- `AsyncFunction<T, R>`: Represents an asynchronous function that processes a task.
+  - `(props: { data: T; signal: AbortSignal }) => Promise<R>`
+
+**Notes**:
+
+- **Concurrency Control**: `UploadHelper` manages the concurrency of task execution based on the `maxConcurrentTasks` option.
+
+- **Retry Mechanism**: Failed tasks are retried based on the `maxRetries` and `retryDelay` options.
+
+- **Progress Tracking**: You can track the progress of the tasks using the `onProgressChange` method.
 
 ## Examples
 
@@ -87,8 +114,9 @@ This example demonstrates how to use the `createFileChunks` function to split a 
 ```typescript
 import { createFileChunks } from 'large-file-upload';
 
-async function splitAndUploadFile(file: File) {
+async function splitFile(file: File) {
   const { fileChunks, chunkSize } = await createFileChunks(file);
+  console.log('File has been split into', fileChunks.length, 'chunks of size', chunkSize);
 }
 ```
 
@@ -108,76 +136,61 @@ async function hashLargeFile(file: File) {
 
 ### Example: Uploading
 
-This example demonstrates how to use `UploadHelper`
+This example demonstrates how to use `UploadHelper` to upload file chunks with concurrency control and retries.
 
 ```typescript
 import { UploadHelper, createFileChunks } from 'large-file-upload';
 
-async function uploadWithoutIndexedDB(file: File) {
-  const { fileChunks } = await createFileChunks(file);
-
-  const uploadHelper = new UploadHelper(fileChunks);
-
-  // Execute the upload tasks with an async function passed to exec
-  await uploadHelper.exec(async ({ data, signal }) => {
-    console.log(`Uploading chunk ${data.index}`);
-    
-    // Simulate upload
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        console.log(`Chunk ${data.index} uploaded`);
-        resolve(true);
-      }, 1000);
-    });
-  });
-
-  console.log('All chunks uploaded without IndexedDB');
-}
-```
-
-### Example: Uploading with IndexedDBName and Retrieving IndexedDB Data
-
-This example demonstrates how to use the `UploadHelper` with the `indexedDBName` option to store task state in IndexedDB. It also shows how to retrieve and delete IndexedDB data.
-
-```typescript
-import { UploadHelper, createFileChunks } from 'large-file-upload';
-
-async function uploadWithIndexedDB(file: File) {
+async function uploadFile(file: File) {
   const { fileChunks } = await createFileChunks(file);
 
   const uploadHelper = new UploadHelper(fileChunks, {
-    indexedDBName: 'myUploadDB',  // IndexedDB is used to store task state
+    maxConcurrentTasks: 5,
+    maxRetries: 3,
+    retryDelay: 1000, // 1 second
   });
 
-  // Execute the upload tasks with an async function passed to exec
-  await uploadHelper.exec(async ({ data, signal }) => {
-    console.log(`Uploading chunk ${data.index}`);
-    
-    // Simulate upload
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        console.log(`Chunk ${data.index} uploaded`);
-        resolve(true);
-      }, 1000);
+  uploadHelper.onProgressChange(progress => {
+    console.log(`Progress: ${progress}/${fileChunks.length}`);
+  });
+
+  // Execute the upload tasks with an async function passed to run
+  const { results, errorTasks } = await uploadHelper.run(async ({ data, signal }) => {
+    const formData = new FormData();
+    formData.append('chunk', data);
+
+    // Simulate an upload request using fetch or any HTTP client
+    const response = await fetch('/upload', {
+      method: 'POST',
+      body: formData,
+      signal,
     });
-  }).then(res => res);
 
-  console.log('All chunks uploaded with IndexedDB support');
+    if (!response.ok) {
+      throw new Error(`Upload failed with status ${response.status}`);
+    }
 
-  // Retrieve data from IndexedDB
-  const indexedDBData = await UploadHelper.getDataByDBName('myUploadDB');
-  console.log('IndexedDB data:', indexedDBData);
+    return await response.json();
+  });
 
-  // Delete the IndexedDB data
-  await UploadHelper.deleteDataByDBName('myUploadDB');
-  console.log('IndexedDB cleared');
+  if (errorTasks.length > 0) {
+    console.log('Some chunks failed to upload:', errorTasks);
+    // Optionally retry failed tasks
+    // await uploadHelper.retryTasks(errorTasks);
+  } else {
+    console.log('All chunks uploaded successfully');
+  }
 }
 ```
 
 ### Example: Pausing, Resuming, and Canceling Uploads
 
+This example demonstrates how to pause, resume, and cancel uploads using the `UploadHelper`.
+
 ```typescript
 import { UploadHelper } from 'large-file-upload';
+
+// Assuming uploadHelper is already initialized and running
 
 // Pausing the uploads
 uploadHelper.pause();
@@ -186,7 +199,7 @@ uploadHelper.pause();
 uploadHelper.resume();
 
 // Canceling all ongoing and pending uploads
-uploadHelper.cancelAll();
+uploadHelper.clear();
 ```
 
 ## License
