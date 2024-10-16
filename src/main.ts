@@ -1,6 +1,5 @@
 import { createFileChunks, generateFileHash, UploadHelper } from '../lib/main';
 import axios from 'axios';
-import pLimit from 'p-limit';
 
 document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
   <div>
@@ -22,7 +21,6 @@ const fileInput = document.getElementById('fileInput') as HTMLInputElement;
 const btnPause = document.getElementById('pause') as HTMLInputElement;
 const btnresume = document.getElementById('resume') as HTMLInputElement;
 let testPool;
-const limit = pLimit(6); // 设置并发数为 4
 
 fileInput.addEventListener('change', async event => {
   const input = event.target as HTMLInputElement;
@@ -38,55 +36,15 @@ fileInput.addEventListener('change', async event => {
         index,
       };
     });
-    console.log('arr',arr.length)
-    // UploadHelper.getDataByDBName('test').then(value => console.log(value));
-    // console.time('pLimitPool');
-    // const uploadPromises = arr.map(({ chunk, index }) =>
-    //   limit(() => {
-    //     const fd = new FormData();
-    //     fd.append('fileHash', hashId);
-    //     fd.append('chunkHash', `${hashId}-${index}`);
-    //     fd.append('fileName', file.name);
-    //     fd.append('chunkFile', chunk);
+    console.log('arr', arr.length);
 
-    //     axios({
-    //       url: `api/upload`,
-    //       method: 'post',
-    //       headers: {
-    //         'Content-Type': 'multipart/form-data',
-    //       },
-    //       data: fd,
-    //     }).then(value => {
-    //       return value;
-    //     });
-    //   }),
-    // );
-
-    // Promise.all(uploadPromises)
-    //   .then(value => {
-    //     console.log(value);
-    //     console.timeEnd('pLimitPool');
-    //     axios({
-    //       url: `api/merge`,
-    //       method: 'post',
-    //       data: {
-    //         chunkSize: chunkSize * 1024 * 1024,
-    //         fileName: file.name,
-    //         fileHash: hashId,
-    //       },
-    //     });
-    //   })
-    //   .catch(error => {
-    //     console.log(error);
-    //   });
-    // return;
     console.time('testPool');
     testPool = new UploadHelper(arr);
-    // testPool.setIndexChangeListener(value => {
-    //   console.log(value);
-    // });
+    testPool.onProgressChange(value => {
+      console.log(value);
+    });
     testPool
-      .exec(async ({ data, signal }) => {
+      .run(async ({ data, signal }) => {
         const { chunk, index } = data;
         const fd = new FormData();
         fd.append('fileHash', hashId);
@@ -106,7 +64,8 @@ fileInput.addEventListener('change', async event => {
         });
         return value;
       })
-      .then(value => {
+      .then(({ results, errorTasks }) => {
+        console.log(results, errorTasks);
         console.timeEnd('testPool');
         axios({
           url: `api/merge`,
@@ -119,80 +78,12 @@ fileInput.addEventListener('change', async event => {
         });
       });
     return;
-    console.time('limitConcurrencyPool');
-    const uploadTasks = arr.map(({ chunk, index }) => () => {
-      const fd = new FormData();
-      fd.append('fileHash', hashId);
-      fd.append('chunkHash', `${hashId}-${index}`);
-      fd.append('fileName', file.name);
-      fd.append('chunkFile', chunk);
-
-      return axios({
-        url: `api/upload`,
-        method: 'post',
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-        data: fd,
-      });
-    });
-
-    limitConcurrency(uploadTasks, 6)
-      .then(() => {
-        console.timeEnd('limitConcurrencyPool');
-        axios({
-          url: `api/merge`,
-          method: 'post',
-          data: {
-            chunkSize: chunkSize * 1024 * 1024,
-            fileName: file.name,
-            fileHash: hashId,
-          },
-        });
-      })
-      .catch(error => {
-        console.log(error);
-      });
   }
 });
-// testPool: 43459.18896484375 ms
-// testPool: 44107.1259765625 ms
-// testPool: 39379.501953125 ms
+
 btnPause.addEventListener('click', () => {
   testPool.pause();
 });
 btnresume.addEventListener('click', () => {
   testPool.resume();
 });
-function limitConcurrency(tasks: (() => Promise<any>)[], concurrency: number): Promise<any[]> {
-  const results: any[] = [];
-  let runningCount = 0;
-  let currentIndex = 0;
-
-  return new Promise((resolve, reject) => {
-    function runTask() {
-      if (currentIndex >= tasks.length) {
-        if (runningCount === 0) {
-          resolve(results);
-        }
-        return;
-      }
-
-      while (runningCount < concurrency && currentIndex < tasks.length) {
-        const taskIndex = currentIndex++;
-        runningCount++;
-        tasks[taskIndex]()
-          .then(result => {
-            results[taskIndex] = result;
-          })
-          .catch(reject)
-          .finally(() => {
-            runningCount--;
-            runTask();
-          });
-      }
-    }
-
-    runTask();
-  });
-}
