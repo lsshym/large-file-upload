@@ -40,9 +40,6 @@ export function generateFileHash(file: File, customChunkSize?: number): Promise<
 
     try {
       for (let i = 0; i < workerCount; i++) {
-        // const worker = new Worker(new URL('./md5.worker.ts', import.meta.url), {
-        //   type: 'module',
-        // });
         const worker = new Md5Worker();
         workers.push(worker);
         worker.onmessage = (event: MessageEvent) => {

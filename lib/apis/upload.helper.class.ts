@@ -7,20 +7,20 @@ enum TaskState {
 }
 
 export type UploadHelperOptions = {
-  maxConcurrentTasks?: number; // 可选参数，默认并发数为 5
-  maxRetries?: number; // 默认重试次数为 3
-  retryDelay?: number; // 默认重试延迟 1 秒
+  maxConcurrentTasks?: number;
+  maxRetries?: number;
+  retryDelay?: number;
 };
 
 export type Task<T> = {
-  data: T; // 任务的数据
-  index: number; // 任务的索引
+  data: T;
+  index: number;
 };
 
 export type AsyncFunction<T, R> = (props: { data: T; signal: AbortSignal }) => R | Promise<R>;
 
 export class UploadHelper<T, R> {
-  private queue: YoctoQueue<Task<T>> = new YoctoQueue<Task<T>>(); // 使用队列管理任务
+  private queue: YoctoQueue<Task<T>> = new YoctoQueue<Task<T>>();
   private maxConcurrentTasks: number;
   private results: (R | Error)[] = [];
   private errorTasks: Task<T>[] = [];
