@@ -9,5 +9,8 @@ export default {
       isolatedModules: true,
     },
   },
-  testMatch: ['**/*.test.ts'], // 只处理以 .test.ts 结尾的文件
+  testMatch: ['**/*.test.ts'],
+  moduleNameMapper: {
+    '\\.worker\\.ts\\?worker$': '<rootDir>/__mocks__/workerMock.ts',
+  },
 };
