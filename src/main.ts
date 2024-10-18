@@ -21,7 +21,7 @@ const fileInput = document.getElementById('fileInput') as HTMLInputElement;
 const btnPause = document.getElementById('pause') as HTMLInputElement;
 const btnresume = document.getElementById('resume') as HTMLInputElement;
 
-let testPool;
+let testPool: UploadHelper<{ chunk: Blob; index: number; }, unknown>;
 
 fileInput.addEventListener('change', async event => {
   const input = event.target as HTMLInputElement;
