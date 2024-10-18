@@ -86,11 +86,13 @@ A utility class to manage and control the upload of file chunks with support for
 **Types**:
 
 - `UploadHelperOptions`: Configuration options for `UploadHelper`.
+
   - `maxConcurrentTasks?: number` - Maximum number of concurrent tasks.
   - `maxRetries?: number` - Maximum number of retries for each task.
   - `retryDelay?: number` - Delay between retries in milliseconds.
 
 - `Task<T>`: Represents a task in the queue.
+
   - `data: T` - The data associated with the task.
   - `index: number` - The index of the task.
 
@@ -146,8 +148,6 @@ async function uploadFile(file: File) {
 
   const uploadHelper = new UploadHelper(fileChunks, {
     maxConcurrentTasks: 5,
-    maxRetries: 3,
-    retryDelay: 1000, // 1 second
   });
 
   uploadHelper.onProgressChange(progress => {
