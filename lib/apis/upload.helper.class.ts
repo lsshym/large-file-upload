@@ -19,7 +19,8 @@ export type Task<T> = {
 
 export type AsyncFunction<T, R> = (props: { data: T; signal: AbortSignal }) => R | Promise<R>;
 
-export class UploadHelper<T, R> {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export class UploadHelper<T = any, R = any> {
   private queue: YoctoQueue<Task<T>> = new YoctoQueue<Task<T>>();
   private maxConcurrentTasks: number;
   private results: (R | Error)[] = [];
