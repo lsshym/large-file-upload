@@ -15,13 +15,12 @@ document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
 `;
 // 计时器函数
 
-
 // 监听文件上传事件
 const fileInput = document.getElementById('fileInput') as HTMLInputElement;
 const btnPause = document.getElementById('pause') as HTMLInputElement;
 const btnresume = document.getElementById('resume') as HTMLInputElement;
 
-let testPool: UploadHelper<{ chunk: Blob; index: number; }, unknown>;
+let testPool: UploadHelper | null = null;
 
 fileInput.addEventListener('change', async event => {
   const input = event.target as HTMLInputElement;
@@ -34,6 +33,8 @@ fileInput.addEventListener('change', async event => {
       return {
         chunk,
         index,
+        fileName: file.name,
+        hashId,
       };
     });
 
