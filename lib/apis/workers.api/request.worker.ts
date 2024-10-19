@@ -1,17 +1,41 @@
-import { Md5WorkerLabelsEnum } from '../generateIdUtils';
+import axios from 'axios';
+import { RequestWorkerLabelsEnum } from '../upload.helper.worker';
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let taskExecutor: any = null;
 
 self.addEventListener('message', async (event: MessageEvent) => {
-  const { label, data, index }: { label: Md5WorkerLabelsEnum; data: ArrayBuffer[]; index: number } =
-    event.data;
+  const { label, data, arrayBuffer, index } = event.data;
 
   try {
     switch (label) {
-      case Md5WorkerLabelsEnum.DOING: {
-      
+      case RequestWorkerLabelsEnum.INIT: {
+        taskExecutor = eval(data); // 执行传入的函数
         postMessage({
-          label: Md5WorkerLabelsEnum.DONE,
-          data: partialHashState, // 发送 MD5 结果
-          index,
+          label: RequestWorkerLabelsEnum.INITED,
+        });
+        break;
+      }
+      case RequestWorkerLabelsEnum.DOING: {
+        console.log(11111111111);
+        const uint8Array = new Uint8Array(arrayBuffer);
+        const blob = new Blob([uint8Array], { type: 'application/octet-stream' });
+        const { index, hashId, fileName } = data;
+        const fd = new FormData();
+        console.log(22222222);
+        fd.append('fileHash', hashId);
+        fd.append('chunkHash', `${hashId}-${index}`);
+        fd.append('fileName', fileName);
+        fd.append('chunkFile', blob);
+        console.log(22222222);
+        axios({
+          url: `api/upload`,
+          method: 'post',
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          },
+          data: fd, // 确保上传的内容正确传递
+          // signal,
         });
         break;
       }
@@ -27,7 +51,7 @@ self.addEventListener('message', async (event: MessageEvent) => {
       errorMessage = String(error);
     }
     postMessage({
-      label: Md5WorkerLabelsEnum.ERROR,
+      label: RequestWorkerLabelsEnum.ERROR,
       data: errorMessage, // 发送错误信息字符串
       index,
     });

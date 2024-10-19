@@ -1,10 +1,10 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { createFileChunks, generateFileHash, UploadHelper } from '../../lib/main';
+import { createFileChunks, generateFileHash, UploadWorkerHelper } from '../../lib/main';
 
 import axios from 'axios';
 import { useRef } from 'preact/hooks';
 
-export const UploadTest = () => {
+export const UploadWorkerTest = () => {
   const uploadRef: any = useRef();
   const fileInputChange = async (event: any) => {
     const input = event.target as HTMLInputElement;
@@ -24,18 +24,17 @@ export const UploadTest = () => {
       });
 
       console.time('uploadRef');
-      uploadRef.current = new UploadHelper(arr);
-      uploadRef.current.onProgressChange((value: any) => {
-        console.log(value);
-      });
+      uploadRef.current = new UploadWorkerHelper(arr);
+
       uploadRef.current
         .run(async ({ data, signal }: { data: any; signal: AbortSignal }) => {
-          const { chunk, index } = data;
+          const { chunk, index, hashId, fileName } = data;
           const fd = new FormData();
           fd.append('fileHash', hashId);
           fd.append('chunkHash', `${hashId}-${index}`);
-          fd.append('fileName', file.name);
+          fd.append('fileName', fileName);
           fd.append('chunkFile', chunk);
+          console.log('adsasf');
           return await axios({
             url: `api/upload`,
             method: 'post',
@@ -64,7 +63,7 @@ export const UploadTest = () => {
 
   return (
     <div>
-      主线程上传
+      worker上传
       <div>
         <input type="file" onChange={fileInputChange} />
         <button
