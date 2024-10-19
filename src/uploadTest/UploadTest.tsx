@@ -11,8 +11,9 @@ export const UploadTest = () => {
     const file = input.files?.[0] || null;
     if (file) {
       const { fileChunks, chunkSize } = createFileChunks(file);
+      console.time('generateFileHash');
       const { hash: hashId } = await generateFileHash(file, chunkSize);
-
+      console.timeEnd('generateFileHash');
       const arr = fileChunks.map((chunk, index) => {
         return {
           chunk,
@@ -24,10 +25,10 @@ export const UploadTest = () => {
 
       console.time('uploadRef');
       uploadRef.current = new UploadHelper(arr);
-      uploadRef.onProgressChange((value: any) => {
+      uploadRef.current.onProgressChange((value: any) => {
         console.log(value);
       });
-      uploadRef
+      uploadRef.current
         .run(async ({ data, signal }: { data: any; signal: AbortSignal }) => {
           const { chunk, index } = data;
           const fd = new FormData();

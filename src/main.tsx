@@ -20,8 +20,6 @@ const App = () => {
     </div>
   );
 };
-// document.addEventListener('DOMContentLoaded', () => {
-//   createMainThreadPerformance();
-// });
+
 
 render(<App />, document.body);
