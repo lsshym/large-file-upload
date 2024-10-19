@@ -1,7 +1,7 @@
 import { createFileChunks, FileChunkResult } from './createFileChunks';
-import Md5Worker from './md5.worker.ts?worker';
+import Md5Worker from './workers.api/md5.worker.ts?worker';
 
-export enum WorkerLabelsEnum {
+export enum Md5WorkerLabelsEnum {
   DOING = 'DOING',
   DONE = 'DONE',
   ERROR = 'ERROR',
@@ -46,7 +46,7 @@ export function generateFileHash(file: File, customChunkSize?: number): Promise<
           const { label, data, index } = event.data;
 
           switch (label) {
-            case WorkerLabelsEnum.DONE:
+            case Md5WorkerLabelsEnum.DONE:
               partialHashes[index] = data;
               completedWorkers++;
               if (completedWorkers === workerCount) {
@@ -70,7 +70,7 @@ export function generateFileHash(file: File, customChunkSize?: number): Promise<
               worker.terminate();
               break;
 
-            case WorkerLabelsEnum.ERROR:
+            case Md5WorkerLabelsEnum.ERROR:
               reject(new Error(`Worker ${index} reported error: ${data}`));
               worker.terminate();
               break;
@@ -100,7 +100,7 @@ export function generateFileHash(file: File, customChunkSize?: number): Promise<
           .then(arrayBuffers => {
             worker.postMessage(
               {
-                label: WorkerLabelsEnum.DOING,
+                label: Md5WorkerLabelsEnum.DOING,
                 data: arrayBuffers,
                 index: i,
               },
