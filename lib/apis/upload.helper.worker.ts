@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import YoctoQueue from 'yocto-queue';
 
 import RequestWorker from './workers.api/request.worker.ts?worker';
@@ -6,6 +7,7 @@ enum TaskState {
   PAUSED,
   COMPLETED,
 }
+
 export enum RequestWorkerLabelsEnum {
   INIT = 'INIT',
   INITED = 'INITED',
@@ -41,55 +43,46 @@ export class UploadWorkerHelper<T = any, R = any> {
       controller: AbortController;
     }
   > = new Map();
-  private taskExecutor!: AsyncFunction<T, R>; // 任务执行函数，确保已定义
   private resolve!: (value: { results: (R | Error)[]; errorTasks: Task<T>[] }) => void; // 保存 resolve
   private maxRetries: number;
   private retryDelay: number;
   // 进度条
   private progress = 0; // 当前任务的索引
   private progressCallback: (index: number) => void = () => {};
+  private workersControl: any;
+  private blobKey: string | undefined;
   constructor(tasksData: T[], options: UploadHelperOptions = {}) {
     const { maxConcurrentTasks = 5, maxRetries = 3, retryDelay = 1000 } = options;
     this.maxConcurrentTasks = maxConcurrentTasks;
     this.maxRetries = maxRetries;
     this.retryDelay = retryDelay;
+    if (tasksData[0]) {
+      const taskEntries = Object.entries(tasksData[0]);
+      this.blobKey = taskEntries.find(([, value]) => value instanceof Blob)?.[0];
+    }
     // 1 还是用链表，只有在执行的时候，把任务发送到worker，这里只管发送，具体任务让worker自己去分配
     tasksData.forEach((data, index) => {
       this.queue.enqueue({ data, index });
     });
   }
 
-  run(func: AsyncFunction<T, R>): Promise<{ results: (R | Error)[]; errorTasks: Task<T>[] }> {
-    // this.taskExecutor = func;
+  run(runOption: any): Promise<{ results: (R | Error)[]; errorTasks: Task<T>[] }> {
+    for (let i = 0; i < this.maxConcurrentTasks; i++) {
+      const worker = new RequestWorker();
+      const channel = new MessageChannel();
+      worker.postMessage({ label: RequestWorkerLabelsEnum.INIT, runOption, port: channel.port1 }, [
+        channel.port1,
+      ]);
+      this.workersControl.push({
+        worker,
+        channel,
+      });
+    }
     this.taskState = TaskState.RUNNING;
 
     return new Promise(resolve => {
       this.resolve = resolve;
-      for (let i = 0; i < this.maxConcurrentTasks; i++) {
-        const worker = new RequestWorker();
-        worker.postMessage({
-          label: RequestWorkerLabelsEnum.INIT,
-          data: func.toString(),
-        });
-        worker.onmessage = event => {
-          const { label } = event.data;
-          // const { chunk, ...other } = data;
-          try {
-            switch (label) {
-              case RequestWorkerLabelsEnum.INITED: {
-                // 初始化完成，开始执行任务
-                this.next(worker);
-                break;
-              }
-              // 可以添加其他 case
-              default:
-                throw new Error(`Unhandled message label: ${label}`);
-            }
-          } catch (error) {
-            throw new Error(`Unhandled message label: ${error}`);
-          }
-        };
-      }
+      this.next();
       // worker初始化，在哪里管理worker
       // 如果在让workerpool自动管理，这里只需要向workerpool发送任务,并发数让worker自己控制
       //
@@ -97,7 +90,7 @@ export class UploadWorkerHelper<T = any, R = any> {
     });
   }
 
-  private next(worker): void {
+  private next(): void {
     if (this.taskState !== TaskState.RUNNING) {
       return;
     }
@@ -112,16 +105,15 @@ export class UploadWorkerHelper<T = any, R = any> {
     if (this.activeCount < this.maxConcurrentTasks && this.queue.size > 0) {
       const task = this.queue.dequeue();
       if (task) {
-        this.runTask(task, worker).finally(() => {
-          this.next(worker);
+        this.runTask(task).finally(() => {
+          this.next();
         });
       }
     }
   }
 
-  private async runTask(task: Task<T>, worker, retries = this.maxRetries): Promise<void> {
+  private async runTask(task: Task<T>, retries = this.maxRetries): Promise<void> {
     this.activeCount++;
-    // const controller = new AbortController();
     // this.currentRuningTasksMap.set(task.index, {
     //   controller,
     //   task,
@@ -145,17 +137,19 @@ export class UploadWorkerHelper<T = any, R = any> {
     //   this.activeCount--;
     // }
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    // 遍历task，找到blob类型的数据
+
     const { chunk, ...other } = task.data as any;
     const arrayBuffer = await chunk.arrayBuffer();
-    worker.postMessage(
-      {
-        label: RequestWorkerLabelsEnum.DOING,
-        data: other,
-        arrayBuffer,
-        index: task.index,
-      },
-      // [arrayBuffer],
-    );
+    // worker.postMessage(
+    //   {
+    //     label: RequestWorkerLabelsEnum.DOING,
+    //     data: other,
+    //     arrayBuffer,
+    //     index: task.index,
+    //   },
+    //   // [arrayBuffer],
+    // );
   }
 
   // pause(): void {

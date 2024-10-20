@@ -13,10 +13,24 @@ const MainThreadPerformance = () => {
   });
 
   const [boxesTimeout, setBoxesTimeout] = useState(
-    Array.from({ length: 20 }, () => ({ x: 0, direction: 1 })),
+    Array.from({ length: 100 }, () => ({
+      x: 0,
+      y: 0,
+      directionX: 1,
+      directionY: 1,
+      angle: 0,
+      opacity: 1,
+    })),
   );
   const [boxesRAF, setBoxesRAF] = useState(
-    Array.from({ length: 20 }, () => ({ x: 0, direction: 1 })),
+    Array.from({ length: 100 }, () => ({
+      x: 0,
+      y: 0,
+      directionX: 1,
+      directionY: 1,
+      angle: 0,
+      opacity: 1,
+    })),
   );
 
   const containerRef = useRef(null);
@@ -64,9 +78,8 @@ const MainThreadPerformance = () => {
     return () => clearInterval(interval);
   }, []);
 
-  // 使用 setTimeout 进行动画
+  // 使用 setTimeout 进行复杂动画
   useEffect(() => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let timeID: any;
     const animateBoxesTimeout = () => {
       setBoxesTimeout(prevBoxes => {
@@ -74,11 +87,30 @@ const MainThreadPerformance = () => {
           const containerWidth = containerRef.current
             ? (containerRef.current as any).offsetWidth
             : 1000;
-          const newX = box.x + box.direction * 5; // 固定速度
-          if (newX >= containerWidth - 50 || newX <= 0) {
-            return { ...box, direction: box.direction * -1 }; // 碰到边界反向移动
-          }
-          return { ...box, x: newX };
+          const containerHeight = containerRef.current
+            ? (containerRef.current as any).offsetHeight
+            : 300;
+
+          const newX = box.x + box.directionX * 3; // 调整 X 轴的速度
+          const newY = box.y + box.directionY * 2; // 调整 Y 轴的速度
+          const newAngle = (box.angle + 3) % 360; // 每帧旋转
+          const newOpacity = Math.max(0.3, Math.abs(Math.sin((box.x + box.y) / 100))); // 动态调整透明度
+
+          // 碰到边界时反向移动
+          const directionX =
+            newX >= containerWidth - 50 || newX <= 0 ? box.directionX * -1 : box.directionX;
+          const directionY =
+            newY >= containerHeight - 50 || newY <= 0 ? box.directionY * -1 : box.directionY;
+
+          return {
+            ...box,
+            x: newX,
+            y: newY,
+            directionX,
+            directionY,
+            angle: newAngle,
+            opacity: newOpacity,
+          };
         });
       });
       timeID = setTimeout(animateBoxesTimeout, 1000 / 60); // 约 60FPS
@@ -88,7 +120,7 @@ const MainThreadPerformance = () => {
     return () => clearTimeout(timeID);
   }, []);
 
-  // 使用 requestAnimationFrame 进行动画
+  // 使用 requestAnimationFrame 进行复杂动画
   useEffect(() => {
     let animationFrameId: number;
     const animateBoxesRAF = () => {
@@ -97,11 +129,29 @@ const MainThreadPerformance = () => {
           const containerWidth = containerRef.current
             ? (containerRef.current as any).offsetWidth
             : 1000;
-          const newX = box.x + box.direction * 5; // 固定移动速度
-          if (newX >= containerWidth - 50 || newX <= 0) {
-            return { ...box, direction: box.direction * -1 }; // 碰到边界反向移动
-          }
-          return { ...box, x: newX };
+          const containerHeight = containerRef.current
+            ? (containerRef.current as any).offsetHeight
+            : 300;
+
+          const newX = box.x + box.directionX * 3;
+          const newY = box.y + box.directionY * 2;
+          const newAngle = (box.angle + 3) % 360;
+          const newOpacity = Math.max(0.3, Math.abs(Math.sin((box.x + box.y) / 100)));
+
+          const directionX =
+            newX >= containerWidth - 50 || newX <= 0 ? box.directionX * -1 : box.directionX;
+          const directionY =
+            newY >= containerHeight - 50 || newY <= 0 ? box.directionY * -1 : box.directionY;
+
+          return {
+            ...box,
+            x: newX,
+            y: newY,
+            directionX,
+            directionY,
+            angle: newAngle,
+            opacity: newOpacity,
+          };
         });
       });
       animationFrameId = requestAnimationFrame(animateBoxesRAF);
@@ -112,7 +162,12 @@ const MainThreadPerformance = () => {
   }, []);
 
   return (
-    <div>
+    <div
+      style={{
+        height: '600px',
+        overflowY: 'auto',
+      }}
+    >
       <h2>主线程性能</h2>
       <p>页面加载时间: {performanceData.loadTime.toFixed(2)} 毫秒</p>
       <p>FPS: {performanceData.fps}</p>
@@ -135,7 +190,7 @@ const MainThreadPerformance = () => {
         ref={containerRef}
         style={{
           position: 'relative',
-          height: '150px',
+          height: '200px', // 高度增加以适应更多方块
           width: '100%',
           border: '1px solid #ccc',
           overflow: 'hidden',
@@ -149,9 +204,10 @@ const MainThreadPerformance = () => {
               position: 'absolute',
               width: '50px',
               height: '50px',
-              backgroundColor: '#ff0000',
+              backgroundColor: `rgba(255, 0, 0, ${box.opacity})`, // 根据透明度变化
               left: `${box.x}px`,
-              top: `${(index % 10) * 30}px`,
+              top: `${box.y}px`,
+              transform: `rotate(${box.angle}deg)`, // 旋转效果
             }}
           />
         ))}
@@ -162,7 +218,7 @@ const MainThreadPerformance = () => {
         ref={containerRef}
         style={{
           position: 'relative',
-          height: '150px',
+          height: '200px', // 高度增加以适应更多方块
           width: '100%',
           border: '1px solid #ccc',
           overflow: 'hidden',
@@ -175,9 +231,10 @@ const MainThreadPerformance = () => {
               position: 'absolute',
               width: '50px',
               height: '50px',
-              backgroundColor: '#0000ff',
+              backgroundColor: `rgba(0, 0, 255, ${box.opacity})`, // 根据透明度变化
               left: `${box.x}px`,
-              top: `${(index % 10) * 30}px`,
+              top: `${box.y}px`,
+              transform: `rotate(${box.angle}deg)`, // 旋转效果
             }}
           />
         ))}
@@ -185,4 +242,5 @@ const MainThreadPerformance = () => {
     </div>
   );
 };
+
 export default MainThreadPerformance;

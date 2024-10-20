@@ -9,6 +9,11 @@ worker发送数据，携带数据越小，发送越快, 如果数据可以移交
 在主线程中发起大量请求，会导致浏览器掉帧，尝试将请求移动到webworker中执行
 
 在worker中是可以发起请求的，但是限制很多，最大的问题是函数不可传递，闭包变量丢失
+
+把文件的blob数据转换成arraybuffer，
+
+突破了webWorker无法高效发送blob的问题，采用MessageChannel方案
+
 <!-- https://juejin.cn/post/7368288987641774120#heading-2 -->
 
 https://www.bilibili.com/video/BV1Br2dY5EaN/?spm_id_from=333.1007.tianma.1-2-2.click&vd_source=da20ed9cf3bfa781fb389c1fa5563ac4

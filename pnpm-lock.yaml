@@ -21,6 +21,9 @@ importers:
       '@types/jest':
         specifier: ^29.5.13
         version: 29.5.13
+      assemblyscript:
+        specifier: ^0.27.30
+        version: 0.27.30
       axios:
         specifier: ^1.7.4
         version: 1.7.4
@@ -865,6 +868,11 @@ packages:
   argparse@2.0.1:
     resolution: {integrity: sha512-8+9WqebbFzpX9OR+Wa6O29asIogeRMzcGtAINdpMHHyAg10f05aSFVBbcEqGf/PXw1EjAZ+q2/bEBg3DvurK3Q==}
 
+  assemblyscript@0.27.30:
+    resolution: {integrity: sha512-tSlwbLEDM1X+w/6/Y2psc3sEg9/7r+m7xv44G6FI2G/w1MNnnulLxcPo7FN0kVIBoD/oxCiRFGaQAanFY0gPhA==}
+    engines: {node: '>=16', npm: '>=7'}
+    hasBin: true
+
   async@3.2.6:
     resolution: {integrity: sha512-htCUDlxyyCLMgaM3xXg0C0LW2xqfuQ6p05pCEIsXuyQ+a1koYKTuBMzRNwmybfLgvJDMd0r1LTn4+E0Ti6C2AA==}
 
@@ -901,6 +909,10 @@ packages:
 
   balanced-match@1.0.2:
     resolution: {integrity: sha512-3oSeUO0TMV67hN1AmbXsK4yaqU7tjiHlbxRDZOpH0KW9+CeX4bRAaX0Anxt0tx2MrpRpWwQaPwIlISEJhYU5Pw==}
+
+  binaryen@116.0.0-nightly.20240114:
+    resolution: {integrity: sha512-0GZrojJnuhoe+hiwji7QFaL3tBlJoA+KFUN7ouYSDGZLSo9CKM8swQX8n/UcbR0d1VuZKU+nhogNzv423JEu5A==}
+    hasBin: true
 
   brace-expansion@1.1.11:
     resolution: {integrity: sha512-iCuPHDFgrHX7H2vEI/5xpz07zSHB00TpugqhmYtVmMO6518mCuRMoOYFldEBl0g187ufozdaHgWKcYFb61qGiA==}
@@ -1635,6 +1647,9 @@ packages:
 
   lodash@4.17.21:
     resolution: {integrity: sha512-v2kDEe57lecTulaDIuNTPy3Ry4gLGJ6Z1O3vE1krgXZNrsQ+LFTGHVxVjcXPs17LhbZVGedAJv8XZ1tvj5FvSg==}
+
+  long@5.2.3:
+    resolution: {integrity: sha512-lcHwpNoggQTObv5apGNCTdJrO69eHOZMi4BNC+rTLER8iHAqGrUVeLh/irVIM7zTw2bOXA8T6uNPeujwOLg/2Q==}
 
   lru-cache@5.1.1:
     resolution: {integrity: sha512-KpNARQA3Iwv+jTA0utUVVbrh+Jlrr1Fv0e56GGzAFOXN7dk/FviaDW8LHmK52DlcH4WP2n6gI8vN1aesBFgo9w==}
@@ -3124,6 +3139,11 @@ snapshots:
 
   argparse@2.0.1: {}
 
+  assemblyscript@0.27.30:
+    dependencies:
+      binaryen: 116.0.0-nightly.20240114
+      long: 5.2.3
+
   async@3.2.6: {}
 
   asynckit@0.4.0: {}
@@ -3192,6 +3212,8 @@ snapshots:
       babel-preset-current-node-syntax: 1.1.0(@babel/core@7.25.8)
 
   balanced-match@1.0.2: {}
+
+  binaryen@116.0.0-nightly.20240114: {}
 
   brace-expansion@1.1.11:
     dependencies:
@@ -4074,6 +4096,8 @@ snapshots:
   lodash.merge@4.6.2: {}
 
   lodash@4.17.21: {}
+
+  long@5.2.3: {}
 
   lru-cache@5.1.1:
     dependencies:

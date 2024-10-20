@@ -18,8 +18,6 @@ export const UploadTest = () => {
         return {
           chunk,
           index,
-          fileName: file.name,
-          hashId,
         };
       });
 

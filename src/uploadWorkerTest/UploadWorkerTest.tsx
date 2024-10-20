@@ -24,27 +24,10 @@ export const UploadWorkerTest = () => {
       });
 
       console.time('uploadRef');
-      uploadRef.current = new UploadWorkerHelper(arr);
+      uploadRef.current = new UploadWorkerHelper(arr,);
 
       uploadRef.current
-        .run(async ({ data, signal }: { data: any; signal: AbortSignal }) => {
-          const { chunk, index, hashId, fileName } = data;
-          const fd = new FormData();
-          fd.append('fileHash', hashId);
-          fd.append('chunkHash', `${hashId}-${index}`);
-          fd.append('fileName', fileName);
-          fd.append('chunkFile', chunk);
-          console.log('adsasf');
-          return await axios({
-            url: `api/upload`,
-            method: 'post',
-            headers: {
-              'Content-Type': 'multipart/form-data',
-            },
-            data: fd, // 确保上传的内容正确传递
-            signal,
-          });
-        })
+        .run({})
         .then(({ results, errorTasks }: any) => {
           console.log(results, errorTasks);
           console.timeEnd('uploadRef');
