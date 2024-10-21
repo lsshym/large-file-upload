@@ -14,6 +14,8 @@ worker发送数据，携带数据越小，发送越快, 如果数据可以移交
 
 突破了webWorker无法高效发送blob的问题，采用MessageChannel方案
 
+重大发现，messagechannel可以直接高效发送blob数组
+
 <!-- https://juejin.cn/post/7368288987641774120#heading-2 -->
 
 https://www.bilibili.com/video/BV1Br2dY5EaN/?spm_id_from=333.1007.tianma.1-2-2.click&vd_source=da20ed9cf3bfa781fb389c1fa5563ac4

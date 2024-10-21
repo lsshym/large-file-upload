@@ -12,10 +12,12 @@ export const WorkerPerformance = () => {
     const file = input.files?.[0] || null;
     if (file) {
       const { fileChunks } = createFileChunks(file);
-      fileChunks.forEach(async (chunk, index) => {
-        const time = new Date().getTime();
-        channel.port2.postMessage({ chunk, index, time });
-      });
+      // fileChunks.forEach(async (chunk, index) => {
+      //   const time = new Date().getTime();
+      //   channel.port2.postMessage({ chunk, index, time });
+      // });
+      const time = new Date().getTime();
+      channel.port2.postMessage({ fileChunks, time });
     }
 
     console.time('Blob to ArrayBuffer Conversion Total Time'); // 开始计时
