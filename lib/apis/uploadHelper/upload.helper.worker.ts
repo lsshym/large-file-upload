@@ -59,13 +59,15 @@ export class UploadWorkerHelper<T = any, R = any> {
 
     const worker = new RequestWorker();
     const channel = new MessageChannel();
-    worker.postMessage({ label: RequestWorkerLabelsEnum.INIT, port: channel.port1 }, [
-      channel.port1,
-    ]);
+
     this.workerControl = {
       worker,
       channel,
     };
+    worker.postMessage({ label: RequestWorkerLabelsEnum.INIT, port: channel.port1 }, [
+      channel.port1,
+    ]);
+    channel.port2.postMessage({ fileChunks, time });
     // const time = new Date().getTime();
     // channel.port2.postMessage({ fileChunks, time });
     // if (tasksData[0]) {
@@ -83,7 +85,12 @@ export class UploadWorkerHelper<T = any, R = any> {
 
     return new Promise(resolve => {
       // this.resolve = resolve;
-      this.workerControl.channel.port2.postMessage({ fileChunks, time });
+      this.workerControl.channel.port2.postMessage({
+        label: RequestWorkerLabelsEnum.RUNNING,
+        data: {
+          resolve,
+        },
+      });
       this.next();
       // worker初始化，在哪里管理worker
       // 如果在让workerpool自动管理，这里只需要向workerpool发送任务,并发数让worker自己控制
