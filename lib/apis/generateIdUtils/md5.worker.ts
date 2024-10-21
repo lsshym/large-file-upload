@@ -1,5 +1,5 @@
 import { createMD5 } from 'hash-wasm';
-import { Md5WorkerLabelsEnum } from '../generateIdUtils';
+import { Md5WorkerLabelsEnum } from './generateFileHash';
 
 self.addEventListener('message', async (event: MessageEvent) => {
   const { label, data, index }: { label: Md5WorkerLabelsEnum; data: ArrayBuffer[]; index: number } =
