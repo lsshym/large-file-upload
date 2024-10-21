@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { RequestWorkerLabelsEnum } from '../upload.helper.worker';
+import { RequestWorkerLabelsEnum } from '../uploadHelper/upload.helper.worker';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 let taskExecutor: any = null;

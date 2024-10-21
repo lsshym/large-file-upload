@@ -56,14 +56,14 @@ export class UploadWorkerHelper<T = any, R = any> {
     this.maxConcurrentTasks = maxConcurrentTasks;
     this.maxRetries = maxRetries;
     this.retryDelay = retryDelay;
-    if (tasksData[0]) {
-      const taskEntries = Object.entries(tasksData[0]);
-      this.blobKey = taskEntries.find(([, value]) => value instanceof Blob)?.[0];
-    }
+    // if (tasksData[0]) {
+    //   const taskEntries = Object.entries(tasksData[0]);
+    //   this.blobKey = taskEntries.find(([, value]) => value instanceof Blob)?.[0];
+    // }
     // 1 还是用链表，只有在执行的时候，把任务发送到worker，这里只管发送，具体任务让worker自己去分配
-    tasksData.forEach((data, index) => {
-      this.queue.enqueue({ data, index });
-    });
+    // tasksData.forEach((data, index) => {
+    //   this.queue.enqueue({ data, index });
+    // });
   }
 
   run(runOption: any): Promise<{ results: (R | Error)[]; errorTasks: Task<T>[] }> {
