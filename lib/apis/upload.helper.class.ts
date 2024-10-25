@@ -98,6 +98,9 @@ export class UploadHelper<T = any, R = any> {
       this.results[task.index] = result;
       this.progressCallback(++this.progress);
     } catch (error) {
+      if (this.taskState !== TaskState.RUNNING) {
+        return;
+      }
       if (retries > 0) {
         await new Promise(resolve => setTimeout(resolve, this.retryDelay));
         await this.runTask(task, retries - 1);
