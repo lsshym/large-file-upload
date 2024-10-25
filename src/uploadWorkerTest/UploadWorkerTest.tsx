@@ -16,31 +16,28 @@ export const UploadWorkerTest = () => {
       console.timeEnd('generateFileHash');
       const arr = fileChunks.map((chunk, index) => {
         return {
-          chunk,
-          index,
+          chunkFile: chunk,
+          chunkHash: `${hashId}-${index}`,
           fileName: file.name,
-          hashId,
+          fileHash: hashId,
         };
       });
+      console.time('uploadRefWorker');
+      uploadRef.current = new UploadWorkerHelper(arr);
 
-      console.time('uploadRef');
-      uploadRef.current = new UploadWorkerHelper(arr,);
-
-      uploadRef.current
-        .run({})
-        .then(({ results, errorTasks }: any) => {
-          console.log(results, errorTasks);
-          console.timeEnd('uploadRef');
-          axios({
-            url: `api/merge`,
-            method: 'post',
-            data: {
-              chunkSize: chunkSize * 1024 * 1024,
-              fileName: file.name,
-              fileHash: hashId,
-            },
-          });
+      uploadRef.current.run({}).then(({ results, errorTasks }: any) => {
+        console.log(results, errorTasks);
+        console.timeEnd('uploadRefWorker');
+        axios({
+          url: `api/merge`,
+          method: 'post',
+          data: {
+            chunkSize: chunkSize * 1024 * 1024,
+            fileName: file.name,
+            fileHash: hashId,
+          },
         });
+      });
     }
   };
 

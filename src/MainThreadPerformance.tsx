@@ -91,9 +91,9 @@ const MainThreadPerformance = () => {
             ? (containerRef.current as any).offsetHeight
             : 300;
 
-          const newX = box.x + box.directionX * 3; // 调整 X 轴的速度
-          const newY = box.y + box.directionY * 2; // 调整 Y 轴的速度
-          const newAngle = (box.angle + 3) % 360; // 每帧旋转
+          const newX = box.x + box.directionX * 1; // 调整 X 轴的速度
+          const newY = box.y + box.directionY * 1; // 调整 Y 轴的速度
+          const newAngle = (box.angle + 3) % 0; // 每帧旋转
           const newOpacity = Math.max(0.3, Math.abs(Math.sin((box.x + box.y) / 100))); // 动态调整透明度
 
           // 碰到边界时反向移动
@@ -133,9 +133,9 @@ const MainThreadPerformance = () => {
             ? (containerRef.current as any).offsetHeight
             : 300;
 
-          const newX = box.x + box.directionX * 3;
-          const newY = box.y + box.directionY * 2;
-          const newAngle = (box.angle + 3) % 360;
+          const newX = box.x + box.directionX * 1;
+          const newY = box.y + box.directionY * 1;
+          const newAngle = (box.angle + 3) % 0;
           const newOpacity = Math.max(0.3, Math.abs(Math.sin((box.x + box.y) / 100)));
 
           const directionX =
@@ -160,7 +160,15 @@ const MainThreadPerformance = () => {
 
     return () => cancelAnimationFrame(animationFrameId);
   }, []);
+  const [time, setTime] = useState(0);
 
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setTime(prevTime => prevTime + 1);
+    }, 0);
+
+    return () => clearInterval(interval);
+  }, []);
   return (
     <div
       style={{
@@ -169,7 +177,7 @@ const MainThreadPerformance = () => {
       }}
     >
       <h2>主线程性能</h2>
-      <p>页面加载时间: {performanceData.loadTime.toFixed(2)} 毫秒</p>
+      <p>{time}</p>
       <p>FPS: {performanceData.fps}</p>
       <p>内存使用情况:</p>
       <ul>
