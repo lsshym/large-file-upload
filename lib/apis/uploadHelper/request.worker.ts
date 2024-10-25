@@ -59,7 +59,7 @@ class UploadWorkerProcessor<T = any, R = any> {
   // 进度条
   private progress = 0; // 当前任务的索引
   constructor(tasksData: any[], options: UploadHelperOptions = {}) {
-    const { maxConcurrentTasks = 4, maxRetries = 3, retryDelay = 1000 } = options;
+    const { maxConcurrentTasks = 1, maxRetries = 3, retryDelay = 1000 } = options;
     this.maxConcurrentTasks = maxConcurrentTasks;
     this.maxRetries = maxRetries;
     this.retryDelay = retryDelay;
@@ -114,14 +114,14 @@ class UploadWorkerProcessor<T = any, R = any> {
         data: ++this.progress,
       });
     } catch (error) {
-      if (retries > 0) {
-        await new Promise(resolve => setTimeout(resolve, this.retryDelay));
-        await this.runTask(task, retries - 1);
-        return;
-      } else {
-        this.results[task.index] = error as Error;
-        this.errorTasks.push(task);
-      }
+      // if (retries > 0) {
+      //   await new Promise(resolve => setTimeout(resolve, this.retryDelay));
+      //   await this.runTask(task, retries - 1);
+      //   return;
+      // } else {
+      //   this.results[task.index] = error as Error;
+      //   this.errorTasks.push(task);
+      // }
     } finally {
       this.currentRuningTasksMap.delete(task.index);
       this.activeCount--;
@@ -155,28 +155,28 @@ class UploadWorkerProcessor<T = any, R = any> {
       this.queue.enqueue(task);
       controller.abort();
     });
-    this.currentRuningTasksMap.clear();
+    // this.currentRuningTasksMap.clear();
   }
   resume(): void {
-    if (this.taskState !== TaskState.PAUSED) {
-      return;
-    }
-    this.taskState = TaskState.RUNNING;
-    for (let i = 0; i < this.maxConcurrentTasks; i++) {
-      this.next();
-    }
+    // if (this.taskState !== TaskState.PAUSED) {
+    //   return;
+    // }
+    // this.taskState = TaskState.RUNNING;
+    // for (let i = 0; i < this.maxConcurrentTasks; i++) {
+    //   this.next();
+    // }
   }
   retryTasks(tasks: Task<T>[]): Promise<{ results: (R | Error)[]; errorTasks: Task<T>[] }> {
-    tasks.forEach(task => {
-      this.queue.enqueue(task);
-    });
-    this.taskState = TaskState.RUNNING;
-    return new Promise(resolve => {
-      // this.resolve = resolve;
-      for (let i = 0; i < this.maxConcurrentTasks; i++) {
-        this.next();
-      }
-    });
+    // tasks.forEach(task => {
+    //   this.queue.enqueue(task);
+    // });
+    // this.taskState = TaskState.RUNNING;
+    // return new Promise(resolve => {
+    //   // this.resolve = resolve;
+    //   for (let i = 0; i < this.maxConcurrentTasks; i++) {
+    //     this.next();
+    //   }
+    // });
   }
   clear(): void {
     this.taskState = TaskState.COMPLETED;

@@ -42,7 +42,7 @@ export class UploadHelper<T = any, R = any> {
   private progress = 0; // 当前任务的索引
   private progressCallback: (index: number) => void = () => {};
   constructor(tasksData: T[], options: UploadHelperOptions = {}) {
-    const { maxConcurrentTasks = 5, maxRetries = 3, retryDelay = 1000 } = options;
+    const { maxConcurrentTasks = 4, maxRetries = 3, retryDelay = 1000 } = options;
     this.maxConcurrentTasks = maxConcurrentTasks;
     this.maxRetries = maxRetries;
     this.retryDelay = retryDelay;
@@ -98,6 +98,9 @@ export class UploadHelper<T = any, R = any> {
       this.results[task.index] = result;
       this.progressCallback(++this.progress);
     } catch (error) {
+      if (this.taskState !== TaskState.RUNNING) {
+        return;
+      }
       if (retries > 0) {
         await new Promise(resolve => setTimeout(resolve, this.retryDelay));
         await this.runTask(task, retries - 1);

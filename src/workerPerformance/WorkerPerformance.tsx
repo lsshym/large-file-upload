@@ -1,10 +1,13 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { createFileChunks } from '../../lib/main';
-import TestWorker from './testWorker.ts?worker';
+// import TestWorker from './testWorker.ts?worker';
 
 export const WorkerPerformance = () => {
   const testWorkerPerformance = async (event: any) => {
-    const worker = new TestWorker();
+    // const worker = new TestWorker();
+    const worker = new Worker(new URL('./testWorker.ts', import.meta.url), {
+      type:'module',
+    });
     const channel = new MessageChannel();
     worker.postMessage({ port: channel.port1 }, [channel.port1]);
 

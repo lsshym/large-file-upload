@@ -221,7 +221,7 @@ const MainThreadPerformance = () => {
         ))}
       </div>
 
-      <h3>RequestAnimationFrame 动画效果</h3>
+      {/* <h3>RequestAnimationFrame 动画效果</h3>
       <div
         ref={containerRef}
         style={{
@@ -246,7 +246,7 @@ const MainThreadPerformance = () => {
             }}
           />
         ))}
-      </div>
+      </div> */}
     </div>
   );
 };

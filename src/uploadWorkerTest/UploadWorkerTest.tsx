@@ -12,7 +12,8 @@ export const UploadWorkerTest = () => {
     if (file) {
       const { fileChunks, chunkSize } = createFileChunks(file);
       console.time('generateFileHash');
-      const { hash: hashId } = await generateFileHash(file, chunkSize);
+      // const { hash: hashId } = await generateFileHash(file, chunkSize);
+      const hashId = '123';
       console.timeEnd('generateFileHash');
       const arr = fileChunks.map((chunk, index) => {
         return {

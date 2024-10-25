@@ -36,6 +36,7 @@ export class UploadWorkerHelper<T = any, R = any> {
   private progressCallback: (index: number) => void = () => {};
   private workerControl: any;
   constructor(tasksData: T[], options: UploadHelperOptions = {}) {
+    console.log(111233233)
     const worker = new RequestWorker();
     const channel = new MessageChannel();
     worker.onmessage = this.handleWorkerMessage.bind(this);
