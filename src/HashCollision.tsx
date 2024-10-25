@@ -1,7 +1,6 @@
-/* eslint-disable @typescript-eslint/no-unsafe-function-type */
 import { generateFileHash } from '../lib/main';
 
-export function createRandomFile(minSizeMB: number, maxSizeMB: number) {
+function createRandomFile(minSizeMB: number, maxSizeMB: number) {
   const chunkSize = 65536; // 每个块最大为 64 KB
   const sizeMB = Math.floor(Math.random() * (maxSizeMB - minSizeMB + 1)) + minSizeMB;
   const size = sizeMB * 1024 * 1024; // 将 MB 转换为字节
@@ -24,7 +23,7 @@ export function createRandomFile(minSizeMB: number, maxSizeMB: number) {
 // 示例使用：生成一个 1 到 10 MB 大小的随机文件
 // const randomFile = createRandomFile(1, 10);
 // 测试hash碰撞
-export async function testHashCollision() {
+async function testHashCollision() {
   const hashSet = new Set<string>();
   let collisionDetected = false;
 
@@ -34,7 +33,7 @@ export async function testHashCollision() {
     try {
       // 计算哈希值
       const { hash: hashId } = await generateFileHash(randomFile);
-
+      console.log(hashId);
       // 检查是否有哈希碰撞
       if (hashSet.has(hashId)) {
         collisionDetected = true;
@@ -54,10 +53,6 @@ export async function testHashCollision() {
   }
 }
 
-export async function startTimer(cb: Function, file: File, workerCount?: number) {
-  console.time(`${cb.name} time`);
-  const { hash: hashId } = await cb(file, workerCount);
-  console.log('aborted', hashId);
-  console.timeEnd(`${cb.name} time`);
-  return hashId;
-}
+export const HashCollision = () => {
+  return <button onClick={testHashCollision}>测试hash碰撞</button>;
+};

@@ -1,4 +1,5 @@
 import { createFileChunks } from './apis/createFileChunks';
-import { generateFileHash } from './apis/generateIdUtils';
-import { UploadHelper } from './apis/upload.helper.class';
-export { generateFileHash, createFileChunks, UploadHelper };
+import { generateFileHash } from './apis/generateIdUtils/generateFileHash';
+import { UploadHelper } from './apis/uploadHelper/upload.helper.mainThread';
+import { UploadWorkerHelper } from './apis/uploadHelper/upload.helper.worker';
+export { generateFileHash, createFileChunks, UploadHelper, UploadWorkerHelper };

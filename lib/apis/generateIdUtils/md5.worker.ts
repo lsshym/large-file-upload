@@ -1,13 +1,13 @@
 import { createMD5 } from 'hash-wasm';
-import { WorkerLabelsEnum } from './generateIdUtils';
+import { Md5WorkerLabelsEnum } from './generateFileHash';
 
 self.addEventListener('message', async (event: MessageEvent) => {
-  const { label, data, index }: { label: WorkerLabelsEnum; data: ArrayBuffer[]; index: number } =
+  const { label, data, index }: { label: Md5WorkerLabelsEnum; data: ArrayBuffer[]; index: number } =
     event.data;
 
   try {
     switch (label) {
-      case WorkerLabelsEnum.DOING: {
+      case Md5WorkerLabelsEnum.DOING: {
         const md5 = await createMD5();
         md5.init();
 
@@ -19,7 +19,7 @@ self.addEventListener('message', async (event: MessageEvent) => {
         // 生成增量 MD5 的中间状态并传回主线程
         const partialHashState = md5.digest('hex'); // 返回 MD5 结果
         postMessage({
-          label: WorkerLabelsEnum.DONE,
+          label: Md5WorkerLabelsEnum.DONE,
           data: partialHashState, // 发送 MD5 结果
           index,
         });
@@ -37,7 +37,7 @@ self.addEventListener('message', async (event: MessageEvent) => {
       errorMessage = String(error);
     }
     postMessage({
-      label: WorkerLabelsEnum.ERROR,
+      label: Md5WorkerLabelsEnum.ERROR,
       data: errorMessage, // 发送错误信息字符串
       index,
     });

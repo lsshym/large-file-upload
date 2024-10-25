@@ -1,5 +1,7 @@
 {
   "compilerOptions": {
+    "jsx": "react-jsx",
+    "jsxImportSource": "preact", // 告诉 TypeScript 使用 Preact 解析 JSX
     "target": "ES2020",
     "useDefineForClassFields": true,
     "module": "ESNext",
