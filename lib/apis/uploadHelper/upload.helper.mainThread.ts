@@ -89,7 +89,8 @@ export class UploadHelper<T = any, R = any> {
     }
   }
 
-  private async runTask(task: Task<T>, retries = this.maxRetries): Promise<void> {
+  private async runTask(task: Task<T>): Promise<void> {
+    let retries = this.maxRetries; // 设置初始重试次数
     this.activeCount++;
     const controller = new AbortController();
     this.currentRuningTasksMap.set(task.index, {
@@ -97,28 +98,29 @@ export class UploadHelper<T = any, R = any> {
       task,
     });
 
-    try {
-      const result = await this.taskExecutor({ data: task.data, signal: controller.signal });
-      this.results[task.index] = result;
-      this.progressCallback(++this.progress);
-    } catch (error) {
-      if (this.taskState !== TaskState.RUNNING) {
-        return;
+    while (retries >= 0) {
+      try {
+        const result = await this.taskExecutor({ data: task.data, signal: controller.signal });
+        this.results[task.index] = result;
+        this.progressCallback(++this.progress);
+        break;
+      } catch (error) {
+        if (this.taskState !== TaskState.RUNNING) {
+          return;
+        }
+        if (retries > 0) {
+          await new Promise(resolve => setTimeout(resolve, this.retryDelay));
+          return;
+        } else {
+          this.results[task.index] = error as Error;
+          this.errorTasks.push(task);
+        }
       }
-      if (retries > 0) {
-        await new Promise(resolve => setTimeout(resolve, this.retryDelay));
-        await this.runTask(task, retries - 1);
-        return;
-      } else {
-        this.results[task.index] = error as Error;
-        this.errorTasks.push(task);
-      }
-    } finally {
+      retries--; //
       this.currentRuningTasksMap.delete(task.index);
       this.activeCount--;
     }
   }
-
   pause(): void {
     if (this.taskState !== TaskState.RUNNING) {
       return;
