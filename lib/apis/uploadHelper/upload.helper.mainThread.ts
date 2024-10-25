@@ -17,7 +17,11 @@ export type Task<T> = {
   index: number;
 };
 
-export type AsyncFunction<T, R> = (props: { data: T; signal: AbortSignal }) => R | Promise<R>;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export type AsyncFunction<T = any, R = any> = (props: {
+  data: T;
+  signal: AbortSignal;
+}) => R | Promise<R>;
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export class UploadHelper<T = any, R = any> {

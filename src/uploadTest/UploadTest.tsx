@@ -27,7 +27,7 @@ export const UploadTest = () => {
         console.log(value);
       });
       uploadRef.current
-        .run(async ({ data, signal }: { data: any; signal: AbortSignal }) => {
+        .run(async ({ data, signal }: any) => {
           const { chunk, index } = data;
           const fd = new FormData();
           fd.append('fileHash', hashId);
