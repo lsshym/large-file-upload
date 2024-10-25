@@ -19,14 +19,14 @@ self.addEventListener('message', async (event: MessageEvent) => {
     switch (label) {
       case RequestWorkerLabelsEnum.INIT: {
         portChannel = port;
-        portChannel.onmessage = handleWorkerChannelMessage.bind(this);
+        portChannel.onmessage = handleWorkerChannelMessage.bind(self);
         break;
       }
       default:
         throw new Error(`Unhandled message label: ${label}`);
     }
   } catch (error) {
-    let errorMessage = 'Unknown error';
+    let errorMessage = 'Worker Unknown error';
     if (error instanceof Error) {
       errorMessage = `${error.message}\n${error.stack}`;
     } else {
@@ -59,7 +59,7 @@ class UploadWorkerProcessor<T = any, R = any> {
   // 进度条
   private progress = 0; // 当前任务的索引
   constructor(tasksData: any[], options: UploadHelperOptions = {}) {
-    const { maxConcurrentTasks = 1, maxRetries = 3, retryDelay = 1000 } = options;
+    const { maxConcurrentTasks = 4, maxRetries = 3, retryDelay = 1000 } = options;
     this.maxConcurrentTasks = maxConcurrentTasks;
     this.maxRetries = maxRetries;
     this.retryDelay = retryDelay;
@@ -67,7 +67,7 @@ class UploadWorkerProcessor<T = any, R = any> {
       this.queue.enqueue({ data, index });
     });
   }
-  run(requestOption: any) {
+  run(requestOption?: any) {
     this.taskState = TaskState.RUNNING;
     this.requestOption = requestOption;
     for (let i = 0; i < this.maxConcurrentTasks; i++) {
@@ -105,7 +105,6 @@ class UploadWorkerProcessor<T = any, R = any> {
       controller,
       task,
     });
-
     try {
       const result = await this.taskExecutor({ data: task.data, signal: controller.signal });
       this.results[task.index] = result;
@@ -114,34 +113,36 @@ class UploadWorkerProcessor<T = any, R = any> {
         data: ++this.progress,
       });
     } catch (error) {
-      // if (retries > 0) {
-      //   await new Promise(resolve => setTimeout(resolve, this.retryDelay));
-      //   await this.runTask(task, retries - 1);
-      //   return;
-      // } else {
-      //   this.results[task.index] = error as Error;
-      //   this.errorTasks.push(task);
-      // }
+      if (this.taskState !== TaskState.RUNNING) {
+        return;
+      }
+      if (retries > 0) {
+        await new Promise(resolve => setTimeout(resolve, this.retryDelay));
+        await this.runTask(task, retries - 1);
+        return;
+      } else {
+        this.results[task.index] = error as Error;
+        this.errorTasks.push(task);
+      }
     } finally {
       this.currentRuningTasksMap.delete(task.index);
       this.activeCount--;
     }
   }
-  private async taskExecutor(obj: { data: any; signal: any }) {
+  private async taskExecutor(obj: { data: any; signal: AbortSignal }) {
     const { data, signal } = obj;
+    const { url, method = 'post', format, ...other } = this.requestOption;
     const fd = new FormData();
     for (const key in data) {
       if (Object.prototype.hasOwnProperty.call(data, key)) {
-        fd.append(key, data[key]);
+        fd.append(format[key] || key, data[key]);
       }
     }
-    const response = await fetch('/api/upload', {
-      method: 'POST',
+    const response = await fetch(url, {
+      method,
       body: fd, // 确保传递的表单数据
       signal, // 传递 AbortSignal
-      headers: {
-        Accept: 'application/json, text/plain, */*',
-      },
+      ...other,
     });
 
     return response.json();
@@ -155,28 +156,25 @@ class UploadWorkerProcessor<T = any, R = any> {
       this.queue.enqueue(task);
       controller.abort();
     });
-    // this.currentRuningTasksMap.clear();
+    this.currentRuningTasksMap.clear();
   }
   resume(): void {
-    // if (this.taskState !== TaskState.PAUSED) {
-    //   return;
-    // }
-    // this.taskState = TaskState.RUNNING;
-    // for (let i = 0; i < this.maxConcurrentTasks; i++) {
-    //   this.next();
-    // }
+    if (this.taskState !== TaskState.PAUSED) {
+      return;
+    }
+    this.taskState = TaskState.RUNNING;
+    for (let i = 0; i < this.maxConcurrentTasks; i++) {
+      this.next();
+    }
   }
-  retryTasks(tasks: Task<T>[]): Promise<{ results: (R | Error)[]; errorTasks: Task<T>[] }> {
-    // tasks.forEach(task => {
-    //   this.queue.enqueue(task);
-    // });
-    // this.taskState = TaskState.RUNNING;
-    // return new Promise(resolve => {
-    //   // this.resolve = resolve;
-    //   for (let i = 0; i < this.maxConcurrentTasks; i++) {
-    //     this.next();
-    //   }
-    // });
+  retryTasks(tasks: Task<T>[]) {
+    tasks.forEach(task => {
+      this.queue.enqueue(task);
+    });
+    this.taskState = TaskState.RUNNING;
+    for (let i = 0; i < this.maxConcurrentTasks; i++) {
+      this.next();
+    }
   }
   clear(): void {
     this.taskState = TaskState.COMPLETED;
@@ -188,7 +186,7 @@ class UploadWorkerProcessor<T = any, R = any> {
   }
 }
 
-let workerProcessor: any;
+let workerProcessor: UploadWorkerProcessor;
 
 async function handleWorkerChannelMessage(event: MessageEvent) {
   const { label, data } = event.data;
@@ -201,13 +199,22 @@ async function handleWorkerChannelMessage(event: MessageEvent) {
     }
 
     case RequestChannelLabelsEnum.RUNNING: {
-      const { runOption } = data;
-      workerProcessor.run(runOption);
+      const { requestOption } = data;
+      workerProcessor.run(requestOption);
       break;
     }
 
     case RequestChannelLabelsEnum.PAUSE: {
       workerProcessor.pause();
+      break;
+    }
+    case RequestChannelLabelsEnum.RESUME: {
+      workerProcessor.resume();
+      break;
+    }
+    case RequestChannelLabelsEnum.RETRY: {
+      const { tasks } = data;
+      workerProcessor.retryTasks(tasks);
       break;
     }
     default:

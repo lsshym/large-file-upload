@@ -4,7 +4,6 @@ import RequestWorker from './request.worker.ts?worker';
 
 export enum RequestWorkerLabelsEnum {
   INIT = 'INIT',
-  DONE = 'DONE',
   ERROR = 'ERROR',
 }
 export enum RequestChannelLabelsEnum {
@@ -14,6 +13,8 @@ export enum RequestChannelLabelsEnum {
   RESUME = 'RESUME',
   CLEAR = 'CLEAR',
   DONE = 'DONE',
+  RETRY = 'RETRY',
+  RETRYED = 'RETRYED',
   PROGRESS = 'PROGRESS',
   ERROR = 'ERROR',
 }
@@ -28,15 +29,13 @@ export type Task<T> = {
   index: number;
 };
 
-export type AsyncFunction<T, R> = (props: { data: T; signal: AbortSignal }) => R | Promise<R>;
 
 export class UploadWorkerHelper<T = any, R = any> {
   private resolve!: (value: { results: (R | Error)[]; errorTasks: Task<T>[] }) => void; // 保存 resolve
   // 进度条
   private progressCallback: (index: number) => void = () => {};
-  private workerControl: any;
+  private workerControl: { worker: Worker; channel: MessageChannel };
   constructor(tasksData: T[], options: UploadHelperOptions = {}) {
-    console.log(111233233)
     const worker = new RequestWorker();
     const channel = new MessageChannel();
     worker.onmessage = this.handleWorkerMessage.bind(this);
@@ -59,6 +58,7 @@ export class UploadWorkerHelper<T = any, R = any> {
     switch (label) {
       case RequestChannelLabelsEnum.DONE: {
         this.resolve(data);
+        this.workerControl.worker.terminate();
         break;
       }
       case RequestChannelLabelsEnum.ERROR: {
@@ -75,9 +75,7 @@ export class UploadWorkerHelper<T = any, R = any> {
   }
   private handleWorkerMessage(event: MessageEvent) {
     const { data, label } = event.data;
-    if (label === RequestWorkerLabelsEnum.DONE) {
-      this.resolve(data);
-    } else if (label === RequestWorkerLabelsEnum.ERROR) {
+    if (label === RequestWorkerLabelsEnum.ERROR) {
       this.resolve(data);
     }
   }
@@ -102,6 +100,17 @@ export class UploadWorkerHelper<T = any, R = any> {
   resume(): void {
     this.workerControl.channel.port2.postMessage({
       label: RequestChannelLabelsEnum.RESUME,
+    });
+  }
+  retryTasks(tasks: Task<T>[]): Promise<{ results: (R | Error)[]; errorTasks: Task<T>[] }> {
+    return new Promise(resolve => {
+      this.resolve = resolve;
+      this.workerControl.channel.port2.postMessage({
+        label: RequestChannelLabelsEnum.RETRY,
+        data: {
+          tasks,
+        },
+      });
     });
   }
   clear(): void {

@@ -12,12 +12,11 @@ export const UploadWorkerTest = () => {
     if (file) {
       const { fileChunks, chunkSize } = createFileChunks(file);
       console.time('generateFileHash');
-      // const { hash: hashId } = await generateFileHash(file, chunkSize);
-      const hashId = '123';
+      const { hash: hashId } = await generateFileHash(file, chunkSize);
       console.timeEnd('generateFileHash');
       const arr = fileChunks.map((chunk, index) => {
         return {
-          chunkFile: chunk,
+          chunk,
           chunkHash: `${hashId}-${index}`,
           fileName: file.name,
           fileHash: hashId,
@@ -26,19 +25,27 @@ export const UploadWorkerTest = () => {
       console.time('uploadRefWorker');
       uploadRef.current = new UploadWorkerHelper(arr);
 
-      uploadRef.current.run({}).then(({ results, errorTasks }: any) => {
-        console.log(results, errorTasks);
-        console.timeEnd('uploadRefWorker');
-        axios({
-          url: `api/merge`,
+      uploadRef.current
+        .run({
+          url: '/api/upload',
           method: 'post',
-          data: {
-            chunkSize: chunkSize * 1024 * 1024,
-            fileName: file.name,
-            fileHash: hashId,
+          format: {
+            chunk: 'chunkFile',
           },
+        })
+        .then(({ results, errorTasks }: any) => {
+          console.log(results, errorTasks);
+          console.timeEnd('uploadRefWorker');
+          axios({
+            url: `api/merge`,
+            method: 'post',
+            data: {
+              chunkSize: chunkSize * 1024 * 1024,
+              fileName: file.name,
+              fileHash: hashId,
+            },
+          });
         });
-      });
     }
   };
 
