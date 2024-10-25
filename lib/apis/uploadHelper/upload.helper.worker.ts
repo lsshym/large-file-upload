@@ -59,6 +59,8 @@ export class UploadWorkerHelper<T = any, R = any> {
       case RequestChannelLabelsEnum.DONE: {
         this.resolve(data);
         this.workerControl.worker.terminate();
+        this.workerControl.channel.port1.close();
+        this.workerControl.channel.port2.close();
         break;
       }
       case RequestChannelLabelsEnum.ERROR: {
