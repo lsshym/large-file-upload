@@ -111,12 +111,15 @@ class UploadWorkerProcessor<T = any, R = any> {
       try {
         const result = await this.taskExecutor({ data: task.data, signal: controller.signal });
         this.results[task.index] = result;
+        this.currentRuningTasksMap.delete(task.index);
+        this.activeCount--;
         portChannel.postMessage({
           label: RequestChannelLabelsEnum.PROGRESS,
           data: ++this.progress,
         });
         break;
       } catch (error) {
+        retries--; //
         if (this.taskState !== TaskState.RUNNING) {
           return;
         }
@@ -128,9 +131,7 @@ class UploadWorkerProcessor<T = any, R = any> {
           this.errorTasks.push(task);
         }
       }
-      retries--; //
-      this.currentRuningTasksMap.delete(task.index);
-      this.activeCount--;
+
     }
   }
   private async taskExecutor(obj: { data: any; signal: AbortSignal }) {

@@ -23,7 +23,9 @@ export const UploadWorkerTest = () => {
         };
       });
       console.time('uploadRefWorker');
-      uploadRef.current = new UploadWorkerHelper(arr);
+      uploadRef.current = new UploadWorkerHelper(arr, {
+        maxConcurrentTasks: 5,
+      });
 
       uploadRef.current
         .run({

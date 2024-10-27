@@ -2,7 +2,7 @@ import { render } from 'preact';
 import { WorkerPerformance } from './workerPerformance/WorkerPerformance';
 import { UploadTest } from './uploadTest/UploadTest';
 import { HashCollision } from './HashCollision';
-import MainThreadPerformance from './MainThreadPerformance';
+import MainThreadPerformance from './MainThreadPerformance/MainThreadPerformance';
 import { UploadWorkerTest } from './uploadWorkerTest/UploadWorkerTest';
 
 const App = () => {
@@ -24,6 +24,5 @@ const App = () => {
     </div>
   );
 };
-
 
 render(<App />, document.body);

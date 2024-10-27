@@ -79,6 +79,7 @@ export class UploadHelper<T = any, R = any> {
       });
       return;
     }
+
     if (this.activeCount < this.maxConcurrentTasks && this.queue.size > 0) {
       const task = this.queue.dequeue();
       if (task) {
@@ -103,8 +104,11 @@ export class UploadHelper<T = any, R = any> {
         const result = await this.taskExecutor({ data: task.data, signal: controller.signal });
         this.results[task.index] = result;
         this.progressCallback(++this.progress);
+        this.activeCount--;
+        this.currentRuningTasksMap.delete(task.index);
         break;
       } catch (error) {
+        retries--;
         if (this.taskState !== TaskState.RUNNING) {
           return;
         }
@@ -116,9 +120,6 @@ export class UploadHelper<T = any, R = any> {
           this.errorTasks.push(task);
         }
       }
-      retries--; //
-      this.currentRuningTasksMap.delete(task.index);
-      this.activeCount--;
     }
   }
   pause(): void {
