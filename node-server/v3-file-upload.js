@@ -224,6 +224,23 @@ app.post('/merge', async (req, res) => {
   }
 });
 
+app.post('/test', async (req, res) => {
+  try {
+    // 在上传完所有切片后就要调合并切片
+    setTimeout(() => {
+      res.send({
+        code: 0,
+        msg: '文件合并成功',
+      });
+    }, 500);
+  } catch (e) {
+    res.send({
+      code: -1,
+      data: e,
+      msg: '文件合并失败！',
+    });
+  }
+});
 // 返回已上传的所有切片名
 const createUploadedList = async fileHash => {
   // 如果存在这个目录则返回这个目录下的所有切片
