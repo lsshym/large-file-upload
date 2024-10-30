@@ -49,7 +49,7 @@ const MainThreadPerformance = () => {
       ? (containerRef.current as any).offsetHeight
       : 300;
 
-    return Array.from({ length: 200 }, () => ({
+    return Array.from({ length: 1500 }, () => ({
       x: Math.random() * (containerWidth - 60), // 减去方块宽度
       y: Math.random() * (containerHeight - 60),
       directionX: Math.random() > 0.5 ? 1 : -1,
