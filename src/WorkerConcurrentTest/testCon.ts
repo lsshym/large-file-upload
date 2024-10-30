@@ -1,17 +1,29 @@
-import axios from 'axios';
 
-const func = async () => {
-  // 生成一个5M的blob
-  const blob = new Blob([new ArrayBuffer(1 * 1024 * 1024)], { type: 'application/octet-stream' });
-  // 上传blob
-  await axios({
-    url: `/api/test`,
-    method: 'post',
-    data: blob,
-  });
-  func();
-};
+let portChannel: MessagePort;
+self.addEventListener('message', async event => {
+  //   func();
+  const { port } = event.data;
+  portChannel = port;
+  portChannel.onmessage = async event => {
+    const { label, data } = event.data;
+    switch (label) {
+      case 'req': {
+        const { chunkFile, chunkHash, fileName, fileHash } = data;
 
-self.addEventListener('message', async () => {
-  func();
+        const fd = new FormData();
+        fd.append('fileHash', fileHash);
+        fd.append('chunkHash', chunkHash);
+        fd.append('fileName', fileName);
+        fd.append('chunkFile', chunkFile);
+        const response = await fetch('/api/upload', {
+          method: 'post',
+          body: fd, // 确保传递的表单数据
+        });
+        portChannel.postMessage({
+          label: 'done',
+        });
+        return response.json();
+      }
+    }
+  };
 });
