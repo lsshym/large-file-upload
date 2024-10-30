@@ -31,8 +31,10 @@ export class UploadHelper<T = any, R = any> {
   private errorTasks: Task<T>[] = [];
   private activeCount = 0;
   private taskState: TaskState = TaskState.RUNNING;
-  private currentRuningTasksMap: Map<number, { task: Task<T>; controller: AbortController; idleCallbackId?: number }> =
-    new Map();
+  private currentRuningTasksMap: Map<
+    number,
+    { task: Task<T>; controller: AbortController; idleCallbackId?: number }
+  > = new Map();
   private taskExecutor!: AsyncFunction<T, R>;
   private resolve!: (value: { results: (R | Error)[]; errorTasks: Task<T>[] }) => void;
   private maxRetries: number;
@@ -45,7 +47,9 @@ export class UploadHelper<T = any, R = any> {
     const { maxConcurrentTasks = 4, maxRetries = 3, lowPerformance = false } = options;
     this.maxConcurrentTasks = maxConcurrentTasks;
     this.maxRetries = maxRetries;
-    this.runTaskMethod = lowPerformance ? this.runTaskWithIdleCallback : this.runTaskWithoutIdleCallback;
+    this.runTaskMethod = lowPerformance
+      ? this.runTaskWithIdleCallback
+      : this.runTaskWithoutIdleCallback;
     tasksData.forEach((data, index) => {
       this.queue.enqueue({ data, index });
     });
@@ -71,7 +75,6 @@ export class UploadHelper<T = any, R = any> {
       this.resolve({ results: this.results, errorTasks: this.errorTasks });
       return;
     }
-
     if (this.activeCount < this.maxConcurrentTasks && this.queue.size > 0) {
       const task = this.queue.dequeue();
       if (task) {
@@ -112,19 +115,24 @@ export class UploadHelper<T = any, R = any> {
     this.currentRuningTasksMap.set(task.index, { controller, task });
     this.activeCount++;
 
-    await this.handleRetries(task, () =>
-      new Promise<void>((resolve, reject) => {
-        const idleCallbackId = requestIdleCallback(async () => {
-          try {
-            await this.executeTask(task, controller);
-            resolve();
-          } catch (error) {
-            reject(error);
-          }
-        }, { timeout: 2000 });
+    await this.handleRetries(
+      task,
+      () =>
+        new Promise<void>((resolve, reject) => {
+          const idleCallbackId = requestIdleCallback(
+            async () => {
+              try {
+                await this.executeTask(task, controller);
+                resolve();
+              } catch (error) {
+                reject(error);
+              }
+            },
+            { timeout: 2000 },
+          );
 
-        this.currentRuningTasksMap.get(task.index)!.idleCallbackId = idleCallbackId;
-      })
+          this.currentRuningTasksMap.get(task.index)!.idleCallbackId = idleCallbackId;
+        }),
     );
   }
 
@@ -142,6 +150,7 @@ export class UploadHelper<T = any, R = any> {
     this.currentRuningTasksMap.forEach(({ task, controller, idleCallbackId }) => {
       this.queue.enqueue(task);
       controller.abort();
+      this.activeCount = 0;
       if (idleCallbackId !== undefined) cancelIdleCallback(idleCallbackId);
     });
     this.currentRuningTasksMap.clear();
