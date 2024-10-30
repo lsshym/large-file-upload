@@ -66,9 +66,9 @@ A utility class to manage and control the upload of file chunks with support for
 - `tasksData: T[]` - An array of task data (e.g., file chunks) to be uploaded.
 - `options?: UploadHelperOptions` - Optional settings for controlling the upload:
   - `maxConcurrentTasks?: number` - Maximum number of concurrent uploads (default: 5).
+  - `lowPriority?: boolean` - Whether to use low priority mode to improve main thread performance (default: false).
   - `maxRetries?: number` - Maximum number of retries for a failed task (default: 3).
   - `retryDelay?: number` - Delay between retries in milliseconds (default: 1000 ms).
-  - `lowPriority?: boolean` - Whether to use low priority mode to improve main thread performance (default: false).
 
 
 **Methods**:
