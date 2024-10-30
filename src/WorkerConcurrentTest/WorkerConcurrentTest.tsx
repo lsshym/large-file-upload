@@ -12,7 +12,7 @@ export const WorkerConcurrentTest = () => {
       const { hash: hashId } = await generateFileHash(file, chunkSize);
       console.timeEnd('generateFileHash');
 
-      for (let i = 0; i < 6; i++) {
+      for (let i = 0; i < 5; i++) {
         const tes = new testCon();
         const channel = new MessageChannel();
         channel.port2.onmessage = event => {

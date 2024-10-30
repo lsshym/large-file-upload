@@ -27,9 +27,9 @@ async function testHashCollision() {
   const hashSet = new Set<string>();
   let collisionDetected = false;
 
-  for (let i = 0; i < 1000; i++) {
+  for (let i = 0; i < 100000; i++) {
     // 生成一个随机文件，大小为 1 MB
-    const randomFile = createRandomFile(1, 10);
+    const randomFile = createRandomFile(10, 10);
     try {
       // 计算哈希值
       const { hash: hashId } = await generateFileHash(randomFile);

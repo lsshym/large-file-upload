@@ -1,19 +1,4 @@
-import axios from 'axios';
 
-const func = async () => {
-  // 生成一个5M的blob
-  //   fd.append('fileHash', hashId);
-  //   fd.append('chunkHash', `${hashId}-${index}`);
-  //   fd.append('fileName', file.name);
-  //   fd.append('chunkFile', chunk);
-  // 上传blob
-  await axios({
-    url: `/api/test`,
-    method: 'post',
-    data: blob,
-  });
-  func();
-};
 let portChannel: MessagePort;
 self.addEventListener('message', async event => {
   //   func();
