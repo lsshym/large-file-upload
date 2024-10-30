@@ -3,7 +3,6 @@ import { WorkerPerformance } from './workerPerformance/WorkerPerformance';
 import { UploadTest } from './uploadTest/UploadTest';
 import { HashCollision } from './HashCollision';
 import MainThreadPerformance from './MainThreadPerformance/MainThreadPerformance';
-// import { UploadWorkerTest } from './uploadWorkerTest/UploadWorkerTest';
 import { WorkerConcurrentTest } from './WorkerConcurrentTest/WorkerConcurrentTest';
 
 const App = () => {
@@ -11,9 +10,6 @@ const App = () => {
     <div>
       <div>
         <UploadTest></UploadTest>
-      </div>
-      <div>
-        {/* <UploadWorkerTest></UploadWorkerTest> */}
       </div>
       <div>
         <HashCollision></HashCollision>

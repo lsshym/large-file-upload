@@ -10,8 +10,9 @@ enum TaskState {
 
 export type UploadHelperOptions = {
   maxConcurrentTasks?: number;
+  lowPriority?: boolean;
   maxRetries?: number;
-  lowPerformance?: boolean;
+  retryDelay?: number;
 };
 
 export type Task<T> = {
@@ -38,7 +39,7 @@ export class UploadHelper<T = any, R = any> {
   private taskExecutor!: AsyncFunction<T, R>;
   private resolve!: (value: { results: (R | Error)[]; errorTasks: Task<T>[] }) => void;
   private maxRetries: number;
-  private retryDelay: number = 1000;
+  private retryDelay: number;
   private runTaskMethod: (task: Task<T>) => Promise<void>;
   private progress = 0;
   private progressCallback: (index: number) => void = () => {};
@@ -47,11 +48,13 @@ export class UploadHelper<T = any, R = any> {
     const {
       maxConcurrentTasks = (navigator?.hardwareConcurrency / 2) | 4,
       maxRetries = 3,
-      lowPerformance = false,
+      retryDelay = 1000,
+      lowPriority = false,
     } = options;
     this.maxConcurrentTasks = maxConcurrentTasks;
     this.maxRetries = maxRetries;
-    this.runTaskMethod = lowPerformance
+    this.retryDelay = retryDelay;
+    this.runTaskMethod = lowPriority
       ? this.runTaskWithIdleCallback
       : this.runTaskWithoutIdleCallback;
     tasksData.forEach((data, index) => {
@@ -151,10 +154,10 @@ export class UploadHelper<T = any, R = any> {
   pause(): void {
     if (this.taskState !== TaskState.RUNNING) return;
     this.taskState = TaskState.PAUSED;
+    this.activeCount = 0;
     this.currentRuningTasksMap.forEach(({ task, controller, idleCallbackId }) => {
       this.queue.enqueue(task);
       controller.abort();
-      this.activeCount = 0;
       if (idleCallbackId !== undefined) cancelIdleCallback(idleCallbackId);
     });
     this.currentRuningTasksMap.clear();
@@ -177,6 +180,7 @@ export class UploadHelper<T = any, R = any> {
 
   clear(): void {
     this.taskState = TaskState.COMPLETED;
+    this.activeCount = 0;
     this.currentRuningTasksMap.forEach(({ controller, idleCallbackId }) => {
       controller.abort();
       if (idleCallbackId !== undefined) cancelIdleCallback(idleCallbackId);

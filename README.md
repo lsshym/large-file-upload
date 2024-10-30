@@ -68,6 +68,8 @@ A utility class to manage and control the upload of file chunks with support for
   - `maxConcurrentTasks?: number` - Maximum number of concurrent uploads (default: 5).
   - `maxRetries?: number` - Maximum number of retries for a failed task (default: 3).
   - `retryDelay?: number` - Delay between retries in milliseconds (default: 1000 ms).
+  - `lowPriority?: boolean` - Whether to use low priority mode to improve main thread performance (default: false).
+
 
 **Methods**:
 
@@ -90,6 +92,7 @@ A utility class to manage and control the upload of file chunks with support for
   - `maxConcurrentTasks?: number` - Maximum number of concurrent tasks.
   - `maxRetries?: number` - Maximum number of retries for each task.
   - `retryDelay?: number` - Delay between retries in milliseconds.
+  - `lowPriority?: boolean` - Whether to use low priority mode for improved main thread performance.
 
 - `Task<T>`: Represents a task in the queue.
 

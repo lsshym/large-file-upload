@@ -3,7 +3,6 @@ import { createFileChunks, generateFileHash, UploadHelper } from '../../lib/main
 
 import axios from 'axios';
 import { useRef } from 'preact/hooks';
-import pLimit from 'p-limit';
 
 export const UploadTest = () => {
   const uploadRef: any = useRef();
@@ -64,47 +63,6 @@ export const UploadTest = () => {
             },
           });
         });
-      // const uploadPromises = arr.map(({ chunk, index }) => {
-      //   return limit(async () => {
-      //     const fd = new FormData();
-      //     fd.append('fileHash', hashId);
-      //     fd.append('chunkHash', `${hashId}-${index}`);
-      //     fd.append('fileName', file.name);
-      //     fd.append('chunkFile', chunk);
-
-      //     return await axios({
-      //       url: `api/upload`,
-      //       method: 'post',
-      //       headers: {
-      //         'Content-Type': 'multipart/form-data',
-      //       },
-      //       data: fd,
-      //     });
-      //   });
-      // });
-
-      // // 运行所有上传任务
-      // Promise.all(uploadPromises)
-      //   .then(results => {
-      //     console.log(results);
-      //     console.timeEnd('uploadRef');
-      //     // 合并文件
-      //     return axios({
-      //       url: `api/merge`,
-      //       method: 'post',
-      //       data: {
-      //         chunkSize: chunkSize * 1024 * 1024,
-      //         fileName: file.name,
-      //         fileHash: hashId,
-      //       },
-      //     });
-      //   })
-      //   .then(mergeResponse => {
-      //     console.log('Merge response:', mergeResponse);
-      //   })
-      //   .catch(error => {
-      //     console.error('Upload error:', error);
-      //   });
     }
   };
 
