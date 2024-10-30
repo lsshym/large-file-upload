@@ -10,7 +10,6 @@ export const UploadTest = () => {
   const fileInputChange = async (event: any) => {
     const input = event.target as HTMLInputElement;
     const file = input.files?.[0] || null;
-    // const limit = pLimit(5); // 设置并发限制为5
 
     if (file) {
       const { fileChunks, chunkSize } = createFileChunks(file);
