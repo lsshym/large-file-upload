@@ -44,7 +44,11 @@ export class UploadHelper<T = any, R = any> {
   private progressCallback: (index: number) => void = () => {};
 
   constructor(tasksData: T[], options: UploadHelperOptions = {}) {
-    const { maxConcurrentTasks = 4, maxRetries = 3, lowPerformance = false } = options;
+    const {
+      maxConcurrentTasks = (navigator?.hardwareConcurrency / 2) | 4,
+      maxRetries = 3,
+      lowPerformance = false,
+    } = options;
     this.maxConcurrentTasks = maxConcurrentTasks;
     this.maxRetries = maxRetries;
     this.runTaskMethod = lowPerformance
