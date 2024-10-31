@@ -1,5 +1,6 @@
 import { createFileChunks, FileChunkResult } from '../createFileChunks';
-import Md5Worker from './md5.worker.ts?worker';
+import Md5Worker from './md5.worker.ts?worker&inline';
+
 
 export enum Md5WorkerLabelsEnum {
   DOING = 'DOING',

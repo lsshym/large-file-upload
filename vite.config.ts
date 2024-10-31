@@ -20,13 +20,6 @@ export default defineConfig({
       fileName: 'large-file-upload', // 输出文件名，基于不同格式生成文件
     },
   },
-  worker: {
-    rollupOptions: {
-      output: {
-          entryFileNames: '[name]-[hash].js'
-      },
-    },
-  },
   plugins: [
     dts({
       include: ['./lib/**/*'],
