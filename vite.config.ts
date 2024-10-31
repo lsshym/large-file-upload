@@ -3,7 +3,7 @@ import dts from 'vite-plugin-dts';
 import { visualizer } from 'rollup-plugin-visualizer'; // 打包视图分析
 
 export default defineConfig({
-  base: './',
+  // base: './',
   server: {
     proxy: {
       '/api': {
