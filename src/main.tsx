@@ -20,7 +20,7 @@ const App = () => {
       <div>
         <WorkerConcurrentTest></WorkerConcurrentTest>
       </div>
-      {/* <MainThreadPerformance></MainThreadPerformance> */}
+      <MainThreadPerformance></MainThreadPerformance>
     </div>
   );
 };

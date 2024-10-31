@@ -26,7 +26,7 @@ export const UploadTest = () => {
       console.time('uploadRef');
       uploadRef.current = new UploadHelper(arr, {
         maxConcurrentTasks: 5,
-        // lowPerformance: true,
+        lowPriority: true,
       });
       uploadRef.current.onProgressChange((value: any) => {
         console.log(value);
