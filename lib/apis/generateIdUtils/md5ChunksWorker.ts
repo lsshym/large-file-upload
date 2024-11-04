@@ -1,5 +1,5 @@
 import { md5 } from 'hash-wasm';
-import { Md5ChunksWorkerLabelsEnum, Md5ChunksChannelLabelsEnum } from './generateFileHash';
+import { Md5ChunksChannelLabelsEnum, Md5ChunksWorkerLabelsEnum } from './generateChunksHash';
 
 self.addEventListener('message', (event: MessageEvent) => {
   const { label, port }: { label: Md5ChunksWorkerLabelsEnum; port: MessagePort } = event.data;
