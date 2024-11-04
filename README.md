@@ -9,6 +9,7 @@
   - [`createFileChunks`](#createfilechunks)
   - [`generateFileHash`](#generatefilehash)
   - [`UploadHelper`](#uploadhelper)
+  - [`generateChunksHash`](#generatechunkshash)
 - [Examples](#examples)
   - [Example: Splitting a File](#example-splitting-a-file)
   - [Example: Generating a File Hash in Chunks](#example-generating-a-file-hash-in-chunks)
@@ -70,7 +71,6 @@ A utility class to manage and control the upload of file chunks with support for
   - `maxRetries?: number` - Maximum number of retries for a failed task (default: 3).
   - `retryDelay?: number` - Delay between retries in milliseconds (default: 1000 ms).
 
-
 **Methods**:
 
 - `run(func: AsyncFunction<T, R>): Promise<{ results: (R | Error)[]; errorTasks: Task<T>[] }>`: Executes the upload tasks in the queue with the provided async function for processing each chunk.
@@ -109,6 +109,18 @@ A utility class to manage and control the upload of file chunks with support for
 - **Retry Mechanism**: Failed tasks are retried based on the `maxRetries` and `retryDelay` options.
 
 - **Progress Tracking**: You can track the progress of the tasks using the `onProgressChange` method.
+
+### `generateChunksHash`
+
+Calculates the MD5 hashes of the provided file chunks in parallel using Web Workers.
+
+**Parameters**:
+
+- `blobArr: Blob[]` - Array of file chunks as Blob objects.
+
+**Returns**:
+
+- `Promise<string[]>` - A promise that resolves to an array of MD5 hashes for each chunk.
 
 ## Examples
 
