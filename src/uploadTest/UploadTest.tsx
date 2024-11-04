@@ -1,5 +1,10 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { createFileChunks, generateFileHash, UploadHelper } from '../../lib/main';
+import {
+  createFileChunks,
+  generateChunksHash,
+  generateFileHash,
+  UploadHelper,
+} from '../../lib/main';
 
 import axios from 'axios';
 import { useRef } from 'preact/hooks';
@@ -14,8 +19,13 @@ export const UploadTest = () => {
     if (file) {
       const { fileChunks, chunkSize } = createFileChunks(file);
       console.time('generateFileHash');
-      const { hash: hashId } = await generateFileHash(file, chunkSize);
+      // const { hash: hashId } = await generateFileHash(file, chunkSize);
       console.timeEnd('generateFileHash');
+      console.time('generateChunksHash');
+      const value = await generateChunksHash(fileChunks);
+      console.timeEnd('generateChunksHash');
+      console.log(value)
+      return;
       const arr = fileChunks.map((chunk, index) => {
         return {
           chunk,

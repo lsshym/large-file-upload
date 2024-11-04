@@ -1,8 +1,9 @@
+import YoctoQueue from 'yocto-queue';
 import { createFileChunks, FileChunkResult } from '../createFileChunks';
-import Md5Worker from './md5.worker.ts?worker&inline';
+import Md5FileWorker from './md5FileWorker.ts?worker&inline';
+import Md5ChunksWorker from './md5ChunksWorker.ts?worker&inline';
 
-
-export enum Md5WorkerLabelsEnum {
+export enum Md5FileWorkerLabelsEnum {
   DOING = 'DOING',
   DONE = 'DONE',
   ERROR = 'ERROR',
@@ -33,7 +34,7 @@ const maxSampleCount = 100;
 export function generateFileHash(file: File, customChunkSize?: number): Promise<FileHashResult> {
   return new Promise((resolve, reject) => {
     const { fileChunks, chunkSize }: FileChunkResult = createFileChunks(file, customChunkSize);
-    const workerCount = 4;
+    const workerCount = navigator?.hardwareConcurrency / 2 || 4;
     const fileChunkSize = Math.ceil(fileChunks.length / workerCount);
     const workers: Worker[] = [];
     const partialHashes: string[] = [];
@@ -42,13 +43,13 @@ export function generateFileHash(file: File, customChunkSize?: number): Promise<
     try {
       for (let i = 0; i < workerCount; i++) {
         // const worker = new Worker(new URL('./md5.worker.ts', import.meta.url), { type: 'module' });
-        const worker = new Md5Worker();
+        const worker = new Md5FileWorker();
         workers.push(worker);
         worker.onmessage = (event: MessageEvent) => {
           const { label, data, index } = event.data;
 
           switch (label) {
-            case Md5WorkerLabelsEnum.DONE:
+            case Md5FileWorkerLabelsEnum.DONE:
               partialHashes[index] = data;
               completedWorkers++;
               if (completedWorkers === workerCount) {
@@ -72,7 +73,7 @@ export function generateFileHash(file: File, customChunkSize?: number): Promise<
               worker.terminate();
               break;
 
-            case Md5WorkerLabelsEnum.ERROR:
+            case Md5FileWorkerLabelsEnum.ERROR:
               reject(new Error(`Worker ${index} reported error: ${data}`));
               worker.terminate();
               break;
@@ -102,7 +103,7 @@ export function generateFileHash(file: File, customChunkSize?: number): Promise<
           .then(arrayBuffers => {
             worker.postMessage(
               {
-                label: Md5WorkerLabelsEnum.DOING,
+                label: Md5FileWorkerLabelsEnum.DOING,
                 data: arrayBuffers,
                 index: i,
               },
@@ -184,4 +185,68 @@ function deterministicSampling(
   const sampledChunks = weightedChunks.slice(0, targetSampleCount).map(item => item.chunk);
 
   return sampledChunks;
+}
+
+export enum Md5ChunksWorkerLabelsEnum {
+  INIT = 'INIT',
+  ERROR = 'ERROR',
+}
+export enum Md5ChunksChannelLabelsEnum {
+  DOING = 'DOING',
+  DONE = 'DONE',
+  ERROR = 'ERROR',
+}
+export function generateChunksHash(blobArr: Blob[]): Promise<string[]> {
+  const workerCount = navigator?.hardwareConcurrency / 2 || 4;
+  const queue = new YoctoQueue();
+  const results: string[] = [];
+  blobArr.forEach((blob, index) => {
+    queue.enqueue({ blob, index });
+  });
+  return new Promise((resolve, reject) => {
+    for (let i = 0; i < workerCount; i++) {
+      const worker = new Md5ChunksWorker();
+      const channel = new MessageChannel();
+      channel.port2.onmessage = (event: MessageEvent) => {
+        const {
+          label,
+          data,
+          index,
+        }: { label: Md5ChunksChannelLabelsEnum; data: string; index: number } = event.data;
+
+        switch (label) {
+          case Md5ChunksChannelLabelsEnum.DONE:
+            {
+              results[index] = data;
+              if (results.length === blobArr.length) {
+                resolve(results);
+                return;
+              }
+              const blob = queue.dequeue();
+              if (blob)
+                channel.port2.postMessage({
+                  data: blob,
+                  label: Md5ChunksChannelLabelsEnum.DOING,
+                });
+            }
+
+            break;
+          case Md5ChunksChannelLabelsEnum.ERROR:
+            reject(new Error(`Worker ${index} reported error: ${data}`));
+            break;
+          default:
+        }
+      };
+      worker.postMessage({ label: Md5ChunksWorkerLabelsEnum.INIT, port: channel.port1 }, [
+        channel.port1,
+      ]);
+      const initialBlob = queue.dequeue();
+      if (initialBlob) {
+        channel.port2.postMessage({
+          data: initialBlob,
+          label: Md5ChunksChannelLabelsEnum.DOING,
+        });
+      }
+    }
+  });
 }
