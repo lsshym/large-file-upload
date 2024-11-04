@@ -18,6 +18,7 @@ export function generateChunksHash(blobArr: Blob[]): Promise<string[]> {
   const workerCount = navigator?.hardwareConcurrency / 2 || 4;
   const queue = new YoctoQueue();
   const results: string[] = [];
+  const workers: { worker: Worker; channel: MessageChannel }[] = [];
   blobArr.forEach((blob, index) => {
     queue.enqueue({ blob, index });
   });
@@ -25,6 +26,10 @@ export function generateChunksHash(blobArr: Blob[]): Promise<string[]> {
     for (let i = 0; i < workerCount; i++) {
       const worker = new Md5ChunksWorker();
       const channel = new MessageChannel();
+      workers.push({
+        worker,
+        channel,
+      });
       channel.port2.onmessage = (event: MessageEvent) => {
         const {
           label,
@@ -37,6 +42,11 @@ export function generateChunksHash(blobArr: Blob[]): Promise<string[]> {
             {
               results[index] = data;
               if (results.length === blobArr.length) {
+                workers.forEach(({ worker, channel }) => {
+                  worker.terminate();
+                  channel.port1.close();
+                  channel.port2.close();
+                });
                 resolve(results);
                 return;
               }
