@@ -7,10 +7,6 @@ export enum Md5FileWorkerLabelsEnum {
   ERROR = 'ERROR',
 }
 
-export interface FileHashResult {
-  hash: string;
-  chunkSize: number;
-}
 const maxSampleCount = 100;
 
 /**
@@ -18,20 +14,14 @@ const maxSampleCount = 100;
  *
  * The function splits the file into chunks and utilizes multiple Web Workers to compute partial hashes concurrently,
  * enhancing performance, especially for large files. It then combines these partial hashes to produce the final hash value.
- * If `customChunkSize` is not provided or is invalid, a default chunk size is used.
  *
  * @param {File} file - The file to generate the hash for.
- * @param {number} [customChunkSize] - Optional custom size for file chunks (in MB).
- * If the value is less than 1 or not a valid number, the default size is set.
- * If the value is not an integer, it is rounded down.
  *
- * @returns {Promise<FileHashResult>} A promise that resolves to an object containing:
- * - `hash`: A string representing the final hash of the file.
- * - `chunkSize`: The size of each chunk used during hashing (in MB).
+ * @returns {Promise<string>} A string representing the final hash of the file.
  */
-export function generateFileHash(file: File, customChunkSize?: number): Promise<FileHashResult> {
+export function generateFileHash(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
-    const { fileChunks, chunkSize }: FileChunkResult = createFileChunks(file, customChunkSize);
+    const { fileChunks }: FileChunkResult = createFileChunks(file);
     const workerCount = navigator?.hardwareConcurrency / 2 || 4;
     const fileChunkSize = Math.ceil(fileChunks.length / workerCount);
     const workers: Worker[] = [];
@@ -40,7 +30,6 @@ export function generateFileHash(file: File, customChunkSize?: number): Promise<
 
     try {
       for (let i = 0; i < workerCount; i++) {
-        // const worker = new Worker(new URL('./md5.worker.ts', import.meta.url), { type: 'module' });
         const worker = new Md5FileWorker();
         workers.push(worker);
         worker.onmessage = (event: MessageEvent) => {
@@ -53,10 +42,7 @@ export function generateFileHash(file: File, customChunkSize?: number): Promise<
               if (completedWorkers === workerCount) {
                 hashConcat(partialHashes)
                   .then(finalHash => {
-                    resolve({
-                      hash: finalHash,
-                      chunkSize,
-                    });
+                    resolve(finalHash);
                   })
                   .catch(error => {
                     let errorMessage = 'Unknown error';

@@ -7,9 +7,9 @@ export const WorkerConcurrentTest = () => {
     const input = event.target as HTMLInputElement;
     const file = input.files?.[0] || null;
     if (file) {
-      const { fileChunks, chunkSize } = createFileChunks(file);
+      const { fileChunks } = createFileChunks(file);
       console.time('generateFileHash');
-      const { hash: hashId } = await generateFileHash(file, chunkSize);
+      const hashId = await generateFileHash(file);
       console.timeEnd('generateFileHash');
 
       for (let i = 0; i < 5; i++) {

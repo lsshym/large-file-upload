@@ -47,11 +47,10 @@ Calculates the hash of the given file in chunks.
 **Parameters**:
 
 - `file: File` - The file for which to generate the hash.
-- `customChunkSize?: number` - Custom chunk size (in MB) for hashing. Optional.
 
 **Returns**:
 
-- `Promise<{ hash: string; chunkSize: number }>` - A promise that resolves to an object containing the hash and chunk size.
+- `Promise<string>` - A promise that resolves to an object containing the hash and chunk size.
 
 ### `UploadHelper`
 
@@ -145,9 +144,8 @@ This example shows how to generate a hash for a large file using the `generateFi
 import { generateFileHash } from 'large-file-upload';
 
 async function hashLargeFile(file: File) {
-  const { hash, chunkSize } = await generateFileHash(file);
+  const hash = await generateFileHash(file);
   console.log('Generated hash for the large file:', hash);
-  console.log('Chunk Size:', chunkSize);
 }
 ```
 
@@ -160,9 +158,16 @@ import { UploadHelper, createFileChunks } from 'large-file-upload';
 
 async function uploadFile(file: File) {
   const { fileChunks } = await createFileChunks(file);
-
-  const uploadHelper = new UploadHelper(fileChunks, {
-    maxConcurrentTasks: 5,
+  const hash = await generateFileHash(file);
+  
+  const fileArr = fileChunks.map((chunk, index) => {
+    return {
+      blob: chunk,
+      index,
+    };
+  });
+  const uploadHelper = new UploadHelper(fileArr, {
+    maxConcurrentTasks: 3,
   });
 
   uploadHelper.onProgressChange(progress => {
@@ -172,8 +177,9 @@ async function uploadFile(file: File) {
   // Execute the upload tasks with an async function passed to run
   const { results, errorTasks } = await uploadHelper.run(async ({ data, signal }) => {
     const formData = new FormData();
-    formData.append('chunk', data);
-
+    formData.append('chunk', data.blob);
+    formData.append('index', data.index);
+    formData.append('hash', hash);
     // Simulate an upload request using fetch or any HTTP client
     const response = await fetch('/upload', {
       method: 'POST',

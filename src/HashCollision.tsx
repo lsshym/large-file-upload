@@ -32,7 +32,7 @@ async function testHashCollision() {
     const randomFile = createRandomFile(10, 10);
     try {
       // 计算哈希值
-      const { hash: hashId } = await generateFileHash(randomFile);
+      const hashId = await generateFileHash(randomFile);
       console.log(hashId);
       // 检查是否有哈希碰撞
       if (hashSet.has(hashId)) {
