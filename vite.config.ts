@@ -20,7 +20,7 @@ export default defineConfig({
     },
   },
   optimizeDeps: {
-    exclude: ['two-gpu-pathtracer'],
+    exclude: ['three-gpu-pathtracer'],
   },
   plugins: [
     dts({
