@@ -1,7 +1,7 @@
 {
   "name": "large-file-upload",
   "private": false,
-  "version": "3.3.1-5",
+  "version": "3.3.1",
   "description": "A library for handling file uploads with chunking, hashing, and concurrent upload management.",
   "type": "module",
   "files": [
