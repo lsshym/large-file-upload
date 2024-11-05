@@ -1,5 +1,6 @@
-import Md5ChunksWorker from './md5ChunksWorker.ts?worker&inline';
 import YoctoQueue from 'yocto-queue';
+import Md5ChunksWorker from './md5ChunksWorker.ts?worker';
+
 export enum Md5ChunksWorkerLabelsEnum {
   INIT = 'INIT',
   ERROR = 'ERROR',
