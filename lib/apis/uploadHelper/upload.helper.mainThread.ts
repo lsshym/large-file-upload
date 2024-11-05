@@ -91,7 +91,7 @@ export class UploadHelper<T = any, R = any> {
   }
 
   private async executeTask(task: Task<T>, controller: AbortController): Promise<void> {
-    const result = await this.taskExecutor({ data: task.data, signal: controller.signal });
+    const result = await this.taskExecutor({ data: task?.data, signal: controller?.signal });
     this.results[task.index] = result;
     this.progressCallback(++this.progress);
     this.activeCount--;
