@@ -26,9 +26,6 @@ export function generateChunksHash(blobArr: Blob[]): Promise<string[]> {
   return new Promise((resolve, reject) => {
     for (let i = 0; i < workerCount; i++) {
       const worker = new Md5ChunksWorker();
-      // const worker = new Worker(new URL('./md5ChunksWorker.ts', import.meta.url),{
-      //   type:'module',
-      // })
       const channel = new MessageChannel();
       workers.push({
         worker,

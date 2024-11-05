@@ -25,6 +25,19 @@ To install the `large-file-upload` library, use the following command:
 npm install large-file-upload
 ```
 
+## Using with Vite
+
+If you are using Vite in your project, you may encounter issues with Vite's dependency optimization process. To resolve this, you need to explicitly exclude `large-file-upload` from the Vite optimization step. Add the following to your `vite.config.ts`:
+
+````typescript
+export default defineConfig({
+  optimizeDeps: {
+    exclude: ["large-file-upload"],
+  },
+});
+
+
+
 ## API Reference
 
 ### `createFileChunks`
@@ -134,7 +147,7 @@ async function splitFile(file: File) {
   const { fileChunks, chunkSize } = await createFileChunks(file);
   console.log('File has been split into', fileChunks.length, 'chunks of size', chunkSize);
 }
-```
+````
 
 ### Example: Generating a File Hash in Chunks
 
@@ -159,7 +172,7 @@ import { UploadHelper, createFileChunks } from 'large-file-upload';
 async function uploadFile(file: File) {
   const { fileChunks } = await createFileChunks(file);
   const hash = await generateFileHash(file);
-  
+
   const fileArr = fileChunks.map((chunk, index) => {
     return {
       blob: chunk,

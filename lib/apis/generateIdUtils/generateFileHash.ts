@@ -31,8 +31,6 @@ export function generateFileHash(file: File): Promise<string> {
     try {
       for (let i = 0; i < workerCount; i++) {
         const worker = new Md5FileWorker();
-        // const worker = new Worker(new URL('./md5FileWorker.ts', import.meta.url))
-
         workers.push(worker);
         worker.onmessage = (event: MessageEvent) => {
           const { label, data, index } = event.data;
