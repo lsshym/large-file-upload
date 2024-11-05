@@ -20,7 +20,7 @@ export default defineConfig({
     },
   },
   optimizeDeps: {
-    exclude: ['three-gpu-pathtracer'],
+    exclude: ['md5ChunksWorker', 'md5FileWorker'],
   },
   plugins: [
     dts({
