@@ -57,9 +57,10 @@ export class UploadHelper<T = any, R = any> {
     this.runTaskMethod = lowPriority
       ? this.runTaskWithIdleCallback
       : this.runTaskWithoutIdleCallback;
-    tasksData.forEach((data, index) => {
-      this.queue.enqueue({ data, index });
-    });
+    const totalTasks = tasksData.length;
+    for (let i = 0; i < totalTasks; i++) {
+      this.queue.enqueue({ data: tasksData[i], index: i });
+    }
   }
 
   run(func: AsyncFunction<T, R>): Promise<{ results: (R | Error)[]; errorTasks: Task<T>[] }> {
