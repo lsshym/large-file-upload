@@ -21,6 +21,7 @@
     "lint": "eslint",
     "lint:fix": "eslint --fix",
     "test": "jest",
+    "publish": "pnpm build && pnpm publish",
     "publish:pre": "pnpm version prerelease && pnpm build && pnpm publish"
   },
   "devDependencies": {
