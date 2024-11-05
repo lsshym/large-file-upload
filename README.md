@@ -29,13 +29,13 @@ npm install large-file-upload
 
 If you are using Vite in your project, you may encounter issues with Vite's dependency optimization process. To resolve this, you need to explicitly exclude `large-file-upload` from the Vite optimization step. Add the following to your `vite.config.ts`:
 
-````typescript
+```typescript
 export default defineConfig({
   optimizeDeps: {
     exclude: ["large-file-upload"],
   },
 });
-
+```
 
 
 ## API Reference
