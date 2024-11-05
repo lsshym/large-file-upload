@@ -3,7 +3,6 @@ import dts from 'vite-plugin-dts';
 import { visualizer } from 'rollup-plugin-visualizer'; // 打包视图分析
 
 export default defineConfig({
-  base: './',
   server: {
     proxy: {
       '/api': {
@@ -19,6 +18,9 @@ export default defineConfig({
       name: 'large-file-upload', // 库的全局变量名称（用于 UMD/IIFE 构建）
       fileName: 'large-file-upload', // 输出文件名，基于不同格式生成文件
     },
+  },
+  optimizeDeps: {
+    exclude: ['two-gpu-pathtracer'],
   },
   plugins: [
     dts({
