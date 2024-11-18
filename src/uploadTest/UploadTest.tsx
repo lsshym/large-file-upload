@@ -21,10 +21,10 @@ export const UploadTest = () => {
       console.time('generateFileHash');
       const hashId = await generateFileHash(file);
       console.timeEnd('generateFileHash');
-      console.time('generateChunksHash');
-      const value = await generateChunksHash(fileChunks);
-      console.timeEnd('generateChunksHash');
-      console.log(value)
+      // console.time('generateChunksHash');
+      // const value = await generateChunksHash(fileChunks);
+      // console.timeEnd('generateChunksHash');
+      // console.log(value)
       const arr = fileChunks.map((chunk, index) => {
         return {
           chunk,
