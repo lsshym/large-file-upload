@@ -59,6 +59,7 @@ app.post('/upload', async (req, res) => {
       const { chunkFile } = files;
 
       // 创建一个临时文件目录用于 临时存储所有文件切片
+      // 存储文件
       const chunkCache = getChunkDir(fileHash);
 
       // 检查 chunkDir临时文件目录 是否存在，如果不存在则创建它。
