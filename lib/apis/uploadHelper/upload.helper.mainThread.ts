@@ -53,12 +53,16 @@ export class UploadHelper<T = any, R = any> {
     this.maxConcurrentTasks = maxConcurrentTasks;
     this.maxRetries = maxRetries;
     this.retryDelay = retryDelay;
-    if (lowPriority && 'requestIdleCallback' in window) {
-      this.runTaskMethod = this.runTaskWithIdleCallback
+    if (lowPriority) {
+      if ('requestIdleCallback' in window) {
+        this.runTaskMethod = this.runTaskWithIdleCallback;
+      } else {
+        this.maxConcurrentTasks = this.maxConcurrentTasks / 2;
+        this.runTaskMethod = this.runTaskWithoutIdleCallback;
+      }
     } else {
       this.runTaskMethod = this.runTaskWithoutIdleCallback;
     }
-   ;
     const totalTasks = tasksData.length;
     for (let i = 0; i < totalTasks; i++) {
       this.queue.enqueue({ data: tasksData[i], index: i });
