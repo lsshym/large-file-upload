@@ -1,5 +1,5 @@
 import { createMD5 } from 'hash-wasm';
-import { Md5FileWorkerLabelsEnum } from './generateFileHash';
+import { Md5FileWorkerLabelsEnum } from './generateFileFingerprint';
 
 self.addEventListener('message', async (event: MessageEvent) => {
   const { label, data, index }: { label: Md5FileWorkerLabelsEnum; data: ArrayBuffer[]; index: number } =
@@ -17,7 +17,7 @@ self.addEventListener('message', async (event: MessageEvent) => {
         });
 
         // 生成增量 MD5 的中间状态并传回主线程
-        const partialHashState = md5.digest('hex'); // 返回 MD5 结果
+        const partialHashState = md5.digest('binary'); // 返回 MD5 结果
         postMessage({
           label: Md5FileWorkerLabelsEnum.DONE,
           data: partialHashState, // 发送 MD5 结果

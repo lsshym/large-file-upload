@@ -24,7 +24,48 @@ export type AsyncFunction<T = any, R = any> = (props: {
   data: T;
   signal: AbortSignal;
 }) => R | Promise<R>;
-
+// TODO: 注释待完善
+/**
+ * `UploadHelper` 类，用于管理和执行异步任务的队列，支持并发控制、暂停、恢复、重试等功能。
+ *
+ * @template T 输入任务的数据类型。
+ * @template R 任务执行后的返回结果类型。
+ *
+ * ### 用法示例：
+ * ```typescript
+ * const tasksData = [/* 一组任务数据 *\/];
+ * const uploadHelper = new UploadHelper(tasksData, {
+ *   maxConcurrentTasks: 5,
+ *   maxRetries: 2,
+ *   retryDelay: 500,
+ *   lowPriority: false,
+ * });
+ *
+ * // 定义任务执行函数
+ * const taskExecutor: AsyncFunction<typeof tasksData[0], ResultType> = async ({ data, signal }) => {
+ *   // 执行异步操作，例如上传文件
+ *   return await uploadFile(data, signal);
+ * };
+ *
+ * // 运行任务
+ * uploadHelper.run(taskExecutor).then(({ results, errorTasks }) => {
+ *   // 处理结果
+ *   console.log('所有任务完成', results);
+ *   if (errorTasks.length > 0) {
+ *     console.log('失败的任务', errorTasks);
+ *   }
+ * });
+ *
+ * // 监听进度变化
+ * uploadHelper.onProgressChange(progress => {
+ *   console.log(`进度：${progress}/${tasksData.length}`);
+ * });
+ *
+ * // 可以随时暂停和恢复任务
+ * // uploadHelper.pause();
+ * // uploadHelper.resume();
+ * ```
+ */
 export class UploadHelper<T = any, R = any> {
   private queue: YoctoQueue<Task<T>> = new YoctoQueue<Task<T>>();
   private maxConcurrentTasks: number;
@@ -68,7 +109,11 @@ export class UploadHelper<T = any, R = any> {
       this.queue.enqueue({ data: tasksData[i], index: i });
     }
   }
-
+  /**
+   * 开始执行任务队列。
+   * @param func 异步任务执行函数。
+   * @returns 包含结果和错误任务的 Promise。
+   */
   run(func: AsyncFunction<T, R>): Promise<{ results: (R | Error)[]; errorTasks: Task<T>[] }> {
     this.taskExecutor = func;
     this.taskState = TaskState.RUNNING;

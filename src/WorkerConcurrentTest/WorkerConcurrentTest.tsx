@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-import { createFileChunks, generateFileHash } from '../../lib/main';
+import { createFileChunks, generateFileFingerprint } from '../../lib/main';
 import testCon from './testCon.ts?worker';
 export const WorkerConcurrentTest = () => {
   const fileInputChange = async (event: any) => {
@@ -8,9 +8,9 @@ export const WorkerConcurrentTest = () => {
     const file = input.files?.[0] || null;
     if (file) {
       const { fileChunks } = createFileChunks(file);
-      console.time('generateFileHash');
-      const hashId = await generateFileHash(file);
-      console.timeEnd('generateFileHash');
+      console.time('generateFileFingerprint');
+      const hashId = await generateFileFingerprint(file);
+      console.timeEnd('generateFileFingerprint');
 
       for (let i = 0; i < 5; i++) {
         const tes = new testCon();

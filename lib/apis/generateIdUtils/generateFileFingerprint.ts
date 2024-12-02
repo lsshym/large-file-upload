@@ -15,11 +15,14 @@ const maxSampleCount = 100;
  * The function splits the file into chunks and utilizes multiple Web Workers to compute partial hashes concurrently,
  * enhancing performance, especially for large files. It then combines these partial hashes to produce the final hash value.
  *
+ * **Note:** This approach is highly efficient and suitable for scenarios where hashing is not required for strict file integrity verification.
+ * It provides excellent performance for tasks like quick file deduplication or identifying changes in large datasets.
+ *
  * @param {File} file - The file to generate the hash for.
  *
  * @returns {Promise<string>} A string representing the final hash of the file.
  */
-export function generateFileHash(file: File): Promise<string> {
+export function generateFileFingerprint(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
     const { fileChunks }: FileChunkResult = createFileChunks(file);
     const workerCount = navigator?.hardwareConcurrency / 2 || 4;

@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { createFileChunks, generateFileHash, UploadWorkerHelper } from '../../lib/main';
+import { createFileChunks, generateFileFingerprint, UploadWorkerHelper } from '../../lib/main';
 
 import axios from 'axios';
 import { useRef } from 'preact/hooks';
@@ -11,9 +11,9 @@ export const UploadWorkerTest = () => {
     const file = input.files?.[0] || null;
     if (file) {
       const { fileChunks, chunkSize } = createFileChunks(file);
-      console.time('generateFileHash');
-      const hashId = await generateFileHash(file);
-      console.timeEnd('generateFileHash');
+      console.time('generateFileFingerprint');
+      const hashId = await generateFileFingerprint(file);
+      console.timeEnd('generateFileFingerprint');
       const arr = fileChunks.map((chunk, index) => {
         return {
           chunk,

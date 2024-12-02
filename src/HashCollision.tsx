@@ -1,4 +1,4 @@
-import { generateFileHash } from '../lib/main';
+import { generateFileFingerprint } from '../lib/main';
 
 function createRandomFile(minSizeMB: number, maxSizeMB: number) {
   const chunkSize = 65536; // 每个块最大为 64 KB
@@ -32,7 +32,7 @@ async function testHashCollision() {
     const randomFile = createRandomFile(10, 10);
     try {
       // 计算哈希值
-      const hashId = await generateFileHash(randomFile);
+      const hashId = await generateFileFingerprint(randomFile);
       console.log(hashId);
       // 检查是否有哈希碰撞
       if (hashSet.has(hashId)) {

@@ -7,7 +7,7 @@
 - [Installation](#installation)
 - [API Reference](#api-reference)
   - [`createFileChunks`](#createfilechunks)
-  - [`generateFileHash`](#generatefilehash)
+  - [`generateFileFingerprint`](#generatefilehash)
   - [`UploadHelper`](#uploadhelper)
   - [`generateChunksHash`](#generatechunkshash)
 - [Examples](#examples)
@@ -53,7 +53,7 @@ Splits the given file into multiple chunks of the specified size.
 
 - `Promise<FileChunkResult>` - An object containing the file chunks and chunk size.
 
-### `generateFileHash`
+### `generateFileFingerprint`
 
 Calculates the hash of the given file in chunks.
 
@@ -151,13 +151,13 @@ async function splitFile(file: File) {
 
 ### Example: Generating a File Hash in Chunks
 
-This example shows how to generate a hash for a large file using the `generateFileHash` function.
+This example shows how to generate a hash for a large file using the `generateFileFingerprint` function.
 
 ```typescript
-import { generateFileHash } from 'large-file-upload';
+import { generateFileFingerprint } from 'large-file-upload';
 
 async function hashLargeFile(file: File) {
-  const hash = await generateFileHash(file);
+  const hash = await generateFileFingerprint(file);
   console.log('Generated hash for the large file:', hash);
 }
 ```
@@ -171,7 +171,7 @@ import { UploadHelper, createFileChunks } from 'large-file-upload';
 
 async function uploadFile(file: File) {
   const { fileChunks } = await createFileChunks(file);
-  const hash = await generateFileHash(file);
+  const hash = await generateFileFingerprint(file);
 
   const fileArr = fileChunks.map((chunk, index) => {
     return {
