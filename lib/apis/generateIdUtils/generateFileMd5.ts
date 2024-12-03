@@ -14,7 +14,7 @@ export async function generateFileMd5(file: File): Promise<string> {
   const hasher = await createMD5();
 
   const reader = file.stream().getReader();
-  //TODO: 不知道怎么实现并发
+  //TODO: 不知道怎么实现并发，这个要比arraybuffer快一点，但大文件还是慢
   let done = false;
   while (!done) {
     const { value, done: doneReading } = await reader.read();

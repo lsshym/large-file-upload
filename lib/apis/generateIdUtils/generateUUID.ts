@@ -1,6 +1,5 @@
 /**
  * Generates a deterministic UUID based on the XXHash algorithm.
- * XXHash is a very fast and low-collision probability hash algorithm, suitable for hashing large datasets.
  *
  * @param {...any} args - The input parameters used to generate the UUID.
  * @returns {string} A UUID string generated from the input.

@@ -4,18 +4,23 @@
 
 ## Table of Contents
 
-- [Installation](#installation)
-- [API Reference](#api-reference)
-  - [`createFileChunks`](#createfilechunks)
-  - [`generateFileFingerprint`](#generatefilehash)
-  - [`UploadHelper`](#uploadhelper)
-  - [`generateChunksHash`](#generatechunkshash)
-- [Examples](#examples)
-  - [Example: Splitting a File](#example-splitting-a-file)
-  - [Example: Generating a File Hash in Chunks](#example-generating-a-file-hash-in-chunks)
-  - [Example: Uploading](#example-uploading)
-  - [Example: Pausing, Resuming, and Canceling Uploads](#example-pausing-resuming-and-canceling-uploads)
-- [License](#license)
+- [large-file-upload](#large-file-upload)
+  - [Table of Contents](#table-of-contents)
+  - [Installation](#installation)
+  - [Using with Vite](#using-with-vite)
+  - [API Reference](#api-reference)
+    - [`createFileChunks`](#createfilechunks)
+    - [`generateUUID`](#generateuuid)
+    - [`generateFileMd5`](#generatefilemd5)
+    - [`generateFileFingerprint`](#generatefilefingerprint)
+    - [`TaskQueueManager`](#taskqueuemanager)
+    - [`generateChunksHash`](#generatechunkshash)
+  - [Examples](#examples)
+    - [Example: Splitting a File](#example-splitting-a-file)
+    - [Example: Generating a File Hash in Chunks](#example-generating-a-file-hash-in-chunks)
+    - [Example: Uploading](#example-uploading)
+    - [Example: Pausing, Resuming, and Canceling Uploads](#example-pausing-resuming-and-canceling-uploads)
+  - [License](#license)
 
 ## Installation
 
@@ -53,6 +58,31 @@ Splits the given file into multiple chunks of the specified size.
 
 - `Promise<FileChunkResult>` - An object containing the file chunks and chunk size.
 
+### `generateUUID`
+
+Generates a UUID (Universally Unique Identifier).
+
+**Parameters**:
+
+ - `any` args - The input parameters used to generate the UUID.
+ 
+**Returns**:
+
+- `string` A UUID string generated from the input.
+
+### `generateFileMd5`
+
+Generates the MD5 hash
+
+**Parameters**:
+
+ - `file` args - The file to be hashed.
+ 
+**Returns**:
+
+- `Promise<string>` AA promise that resolves to the MD5 hash of the file in hexadecimal format.
+
+
 ### `generateFileFingerprint`
 
 Calculates the hash of the given file in chunks.
@@ -65,14 +95,9 @@ Calculates the hash of the given file in chunks.
 
 - `Promise<string>` - A promise that resolves to an object containing the hash and chunk size.
 
-### `UploadHelper`
+### `TaskQueueManager`
 
 A utility class to manage and control the upload of file chunks with support for concurrency, retries, pausing, resuming, and canceling uploads.
-
-**Type Parameters**:
-
-- `T` - The type of task data.
-- `R` - The type of result returned by the task executor function.
 
 **Constructor Parameters**:
 
@@ -97,26 +122,9 @@ A utility class to manage and control the upload of file chunks with support for
 
 - `onProgressChange(callback: (index: number) => void): void`: Sets a callback function to monitor the progress of the tasks.
 
-**Types**:
-
-- `UploadHelperOptions`: Configuration options for `UploadHelper`.
-
-  - `maxConcurrentTasks?: number` - Maximum number of concurrent tasks.
-  - `maxRetries?: number` - Maximum number of retries for each task.
-  - `retryDelay?: number` - Delay between retries in milliseconds.
-  - `lowPriority?: boolean` - Whether to use low priority mode for improved main thread performance.
-
-- `Task<T>`: Represents a task in the queue.
-
-  - `data: T` - The data associated with the task.
-  - `index: number` - The index of the task.
-
-- `AsyncFunction<T, R>`: Represents an asynchronous function that processes a task.
-  - `(props: { data: T; signal: AbortSignal }) => Promise<R>`
-
 **Notes**:
 
-- **Concurrency Control**: `UploadHelper` manages the concurrency of task execution based on the `maxConcurrentTasks` option.
+- **Concurrency Control**: `TaskQueueManager` manages the concurrency of task execution based on the `maxConcurrentTasks` option.
 
 - **Retry Mechanism**: Failed tasks are retried based on the `maxRetries` and `retryDelay` options.
 
@@ -164,14 +172,14 @@ async function hashLargeFile(file: File) {
 
 ### Example: Uploading
 
-This example demonstrates how to use `UploadHelper` to upload file chunks with concurrency control and retries.
+This example demonstrates how to use `TaskQueueManager` to upload file chunks with concurrency control and retries.
 
 ```typescript
-import { UploadHelper, createFileChunks } from 'large-file-upload';
+import { TaskQueueManager, createFileChunks } from 'large-file-upload';
 
 async function uploadFile(file: File) {
   const { fileChunks } = await createFileChunks(file);
-  const hash = await generateFileFingerprint(file);
+  const uuid = await generateUUID(file.size, file.name);
 
   const fileArr = fileChunks.map((chunk, index) => {
     return {
@@ -179,7 +187,7 @@ async function uploadFile(file: File) {
       index,
     };
   });
-  const uploadHelper = new UploadHelper(fileArr, {
+  const uploadHelper = new TaskQueueManager(fileArr, {
     maxConcurrentTasks: 3,
   });
 
@@ -192,7 +200,7 @@ async function uploadFile(file: File) {
     const formData = new FormData();
     formData.append('chunk', data.blob);
     formData.append('index', data.index);
-    formData.append('hash', hash);
+    formData.append('uploadId', uuid);
     // Simulate an upload request using fetch or any HTTP client
     const response = await fetch('/upload', {
       method: 'POST',
@@ -219,10 +227,10 @@ async function uploadFile(file: File) {
 
 ### Example: Pausing, Resuming, and Canceling Uploads
 
-This example demonstrates how to pause, resume, and cancel uploads using the `UploadHelper`.
+This example demonstrates how to pause, resume, and cancel uploads using the `TaskQueueManager`.
 
 ```typescript
-import { UploadHelper } from 'large-file-upload';
+import { TaskQueueManager } from 'large-file-upload';
 
 // Assuming uploadHelper is already initialized and running
 

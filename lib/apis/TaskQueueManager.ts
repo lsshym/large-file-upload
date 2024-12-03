@@ -1,7 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-// 终于搞了一版无比满意的
-
 import YoctoQueue from 'yocto-queue';
+
 enum TaskState {
   RUNNING,
   PAUSED,
@@ -20,53 +19,52 @@ export type Task<T> = {
   index: number;
 };
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type AsyncFunction<T = any, R = any> = (props: {
   data: T;
   signal: AbortSignal;
 }) => R | Promise<R>;
-// TODO: 注释待完善
+
 /**
- * `UploadHelper` 类，用于管理和执行异步任务的队列，支持并发控制、暂停、恢复、重试等功能。
+ * `TaskQueueManager` class to manage and execute asynchronous task queues, supporting concurrency control, pausing, resuming, retries, and more.
  *
- * @template T 输入任务的数据类型。
- * @template R 任务执行后的返回结果类型。
+ * @template T The type of input task data.
+ * @template R The type of the result returned after task execution.
  *
- * ### 用法示例：
+ * ### Example Usage:
+ * 
  * ```typescript
- * const tasksData = [/* 一组任务数据 *\/];
- * const uploadHelper = new UploadHelper(tasksData, {
+ * const tasksData = []; // Replace with actual task data
+ * const uploadHelper = new TaskQueueManager(tasksData, {
  *   maxConcurrentTasks: 5,
- *   maxRetries: 2,
- *   retryDelay: 500,
- *   lowPriority: false,
  * });
- *
- * // 定义任务执行函数
+ * 
+ * // Define task execution function
  * const taskExecutor: AsyncFunction<typeof tasksData[0], ResultType> = async ({ data, signal }) => {
- *   // 执行异步操作，例如上传文件
+ *   // Perform the async operation, e.g., uploading a file
  *   return await uploadFile(data, signal);
  * };
- *
- * // 运行任务
+ * 
+ * // Run the tasks
  * uploadHelper.run(taskExecutor).then(({ results, errorTasks }) => {
- *   // 处理结果
- *   console.log('所有任务完成', results);
+ *   // Handle results
+ *   console.log('All tasks completed', results);
  *   if (errorTasks.length > 0) {
- *     console.log('失败的任务', errorTasks);
+ *     console.log('Failed tasks', errorTasks);
  *   }
  * });
- *
- * // 监听进度变化
+ * 
+ * // Listen for progress change
  * uploadHelper.onProgressChange(progress => {
- *   console.log(`进度：${progress}/${tasksData.length}`);
+ *   console.log(`Progress: ${progress}/${tasksData.length}`);
  * });
- *
- * // 可以随时暂停和恢复任务
+ * 
+ * // You can pause and resume tasks at any time
  * // uploadHelper.pause();
  * // uploadHelper.resume();
  * ```
  */
-export class UploadHelper<T = any, R = any> {
+export class TaskQueueManager<T = any, R = any> {
   private queue: YoctoQueue<Task<T>> = new YoctoQueue<Task<T>>();
   private maxConcurrentTasks: number;
   private results: (R | Error)[] = [];
@@ -84,6 +82,12 @@ export class UploadHelper<T = any, R = any> {
   private runTaskMethod: (task: Task<T>) => Promise<void>;
   private progress = 0;
   private progressCallback: (index: number) => void = () => {};
+
+  /**
+   * Creates an instance of `TaskQueueManager` to manage a queue of asynchronous tasks with concurrency control and other options.
+   * @param tasksData Array of input data for the tasks.
+   * @param options Configuration options for the helper.
+   */
   constructor(tasksData: T[], options: UploadHelperOptions = {}) {
     const {
       maxConcurrentTasks = (navigator?.hardwareConcurrency / 2) | 4,
@@ -91,9 +95,11 @@ export class UploadHelper<T = any, R = any> {
       retryDelay = 1000,
       lowPriority = false,
     } = options;
+
     this.maxConcurrentTasks = maxConcurrentTasks;
     this.maxRetries = maxRetries;
     this.retryDelay = retryDelay;
+    
     if (lowPriority) {
       if ('requestIdleCallback' in window) {
         this.runTaskMethod = this.runTaskWithIdleCallback;
@@ -104,15 +110,17 @@ export class UploadHelper<T = any, R = any> {
     } else {
       this.runTaskMethod = this.runTaskWithoutIdleCallback;
     }
+
     const totalTasks = tasksData.length;
     for (let i = 0; i < totalTasks; i++) {
       this.queue.enqueue({ data: tasksData[i], index: i });
     }
   }
+
   /**
-   * 开始执行任务队列。
-   * @param func 异步任务执行函数。
-   * @returns 包含结果和错误任务的 Promise。
+   * Start executing the task queue.
+   * @param func The async function to execute each task.
+   * @returns A promise containing the results and error tasks.
    */
   run(func: AsyncFunction<T, R>): Promise<{ results: (R | Error)[]; errorTasks: Task<T>[] }> {
     this.taskExecutor = func;
@@ -134,6 +142,7 @@ export class UploadHelper<T = any, R = any> {
       this.resolve({ results: this.results, errorTasks: this.errorTasks });
       return;
     }
+
     if (this.activeCount < this.maxConcurrentTasks && this.queue.size > 0) {
       const task = this.queue.dequeue();
       if (task) {
@@ -169,7 +178,7 @@ export class UploadHelper<T = any, R = any> {
     }
   }
 
-  // 使用 requestIdleCallback 的方法
+  // Method using requestIdleCallback
   private async runTaskWithIdleCallback(task: Task<T>): Promise<void> {
     const controller = new AbortController();
     this.currentRunningTasksMap.set(task.index, { controller, task });
@@ -195,47 +204,6 @@ export class UploadHelper<T = any, R = any> {
     );
   }
 
-  // TODO: 待完善, 部分浏览器暂不支持，这个问题暂时无解
-  // private async runTaskWithIdleCallbackUsingMessageChannel(task: Task<T>): Promise<void> {
-  //   const controller = new AbortController();
-  //   this.currentRunningTasksMap.set(task.index, { controller, task });
-  //   this.activeCount++;
-
-  //   await this.handleRetries(
-  //     task,
-  //     () =>
-  //       new Promise<void>((resolve, reject) => {
-  //         const channel = new MessageChannel();
-
-  //         // 设置超时定时器，2秒后强制执行
-  //         const idleCallbackId = window.setTimeout(() => {
-  //           // 如果任务尚未执行，则强制执行
-  //           channel.port1.onmessage = null; // 防止重复执行
-  //           try {
-  //             this.executeTask(task, controller).then(resolve).catch(reject);
-  //           } catch (error) {
-  //             reject(error);
-  //           }
-  //         }, 2000);
-
-  //         channel.port1.onmessage = () => {
-  //           clearTimeout(idleCallbackId);
-  //           try {
-  //             this.executeTask(task, controller).then(resolve).catch(reject);
-  //           } catch (error) {
-  //             reject(error);
-  //           }
-  //         };
-
-  //         // 发送消息，触发 onmessage，在微任务队列中执行
-  //         channel.port2.postMessage(undefined);
-
-  //         // 记录 timeoutId，以便在需要时清理
-  //         this.currentRunningTasksMap.get(task.index)!.idleCallbackId = idleCallbackId;
-  //       }),
-  //   );
-  // }
-
   private async runTaskWithoutIdleCallback(task: Task<T>): Promise<void> {
     const controller = new AbortController();
     this.currentRunningTasksMap.set(task.index, { controller, task });
@@ -244,6 +212,9 @@ export class UploadHelper<T = any, R = any> {
     await this.handleRetries(task, () => this.executeTask(task, controller));
   }
 
+  /**
+   * Pause the task execution.
+   */
   pause(): void {
     if (this.taskState !== TaskState.RUNNING) return;
     this.taskState = TaskState.PAUSED;
@@ -256,12 +227,20 @@ export class UploadHelper<T = any, R = any> {
     this.currentRunningTasksMap.clear();
   }
 
+  /**
+   * Resume task execution after being paused.
+   */
   resume(): void {
     if (this.taskState !== TaskState.PAUSED) return;
     this.taskState = TaskState.RUNNING;
     for (let i = 0; i < this.maxConcurrentTasks; i++) this.next();
   }
 
+  /**
+   * Retry a list of tasks.
+   * @param tasks List of tasks to retry.
+   * @returns A promise containing the results and error tasks.
+   */
   retryTasks(tasks: Task<T>[]): Promise<{ results: (R | Error)[]; errorTasks: Task<T>[] }> {
     tasks.forEach(task => this.queue.enqueue(task));
     this.taskState = TaskState.RUNNING;
@@ -271,6 +250,9 @@ export class UploadHelper<T = any, R = any> {
     });
   }
 
+  /**
+   * Clear the task queue and stop all running tasks.
+   */
   clear(): void {
     this.taskState = TaskState.COMPLETED;
     this.activeCount = 0;
@@ -282,6 +264,10 @@ export class UploadHelper<T = any, R = any> {
     this.currentRunningTasksMap.clear();
   }
 
+  /**
+   * Set a callback to listen for progress updates.
+   * @param callback Callback function that receives the current progress.
+   */
   onProgressChange(callback: (index: number) => void): void {
     this.progressCallback = callback;
   }

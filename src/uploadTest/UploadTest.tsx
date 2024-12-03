@@ -2,14 +2,12 @@
 import {
   createFileChunks,
   generateChunksHash,
-  generateFileFingerprint,
   UploadHelper,
 } from '../../lib/main';
 import { createMD5 } from 'hash-wasm';
 
 import axios from 'axios';
 import { useRef } from 'preact/hooks';
-import { generateFileHashInChunks, generateFileHashTest } from '../../lib/apis/generateIdUtils/generateUUID';
 import { generateFileMd5 } from '../../lib/apis/generateIdUtils/generateFileMd5';
 
 export const UploadTest = () => {
@@ -18,7 +16,6 @@ export const UploadTest = () => {
   const fileInputChange = async (event: Event) => {
     const input = event.target as HTMLInputElement;
     const file = input.files?.[0] as File;
-
     if (file) {
       const { fileChunks, chunkSize } = createFileChunks(file);
       // console.time('generateFileFingerprint');
