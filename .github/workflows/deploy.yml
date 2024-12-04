@@ -1,32 +1,46 @@
-name: nicecode flow     # 脚本名称
+name: nicecode flow     # 工作流名称
 
 on:
   push:
-    branches: ['main']      # 监听 main 分支的提交
-    tags: ['v*']            # 监听符合规则的标签 (以 'v' 开头的标签)
+    tags: ['v*']            # 仅监听以 'v' 开头的标签推送
 
-permissions:                
-  contents: read            
+permissions:
+  contents: read
   pages: write
   id-token: write
 
 jobs:
   publish-npm:
-    runs-on: ubuntu-latest         # 运行服务器环境
+    runs-on: ubuntu-latest         # 运行环境
     steps:
-      - uses: actions/checkout@v4            # 检出代码仓库
+      - uses: actions/checkout@v4   # 检出代码仓库
+        with:
+          fetch-depth: 0            # 获取所有分支和标签的完整历史记录
+
+      - name: 获取 main 分支的 SHA
+        id: main_sha
+        run: |
+          git fetch origin main
+          echo "main_sha=$(git rev-parse origin/main)" >> $GITHUB_OUTPUT
+
+      - name: 验证标签是否指向 main 分支
+        if: ${{ github.sha != steps.main_sha.outputs.main_sha }}
+        run: |
+          echo "该标签未指向 main 分支的最新提交。退出。"
+          exit 1
+
       - uses: actions/setup-node@v3
         with:
           node-version: 20                  # Node.js 版本
           registry-url: https://registry.npmjs.org
 
-      - name: Setup pnpm                     # 安装 pnpm 依赖
+      - name: 设置 pnpm                     # 安装 pnpm
         uses: pnpm/action-setup@v3
         with:
           version: 8
-          
+              
       - run: pnpm install                    # 安装项目依赖
 
-      - run: pnpm run bp                    # 执行打包发布脚本
+      - run: pnpm run bp                     # 运行构建和发布脚本
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}  # 使用 npm 令牌进行发布
