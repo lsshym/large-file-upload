@@ -1,11 +1,13 @@
 import { createFileChunks } from './apis/createFileChunks';
 import { generateChunksHash } from './apis/generateIdUtils/generateChunksHash';
 import { generateFileFingerprint } from './apis/generateIdUtils/generateFileFingerprint';
+import { generateFileMd5 } from './apis/generateIdUtils/generateFileMd5';
 import { generateUUID } from './apis/generateIdUtils/generateUUID';
 import { TaskQueueManager } from './apis/TaskQueueManager';
 export {
   createFileChunks,
   generateUUID,
+  generateFileMd5,
   generateFileFingerprint,
   generateChunksHash,
   TaskQueueManager,
