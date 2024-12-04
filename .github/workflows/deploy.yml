@@ -51,6 +51,6 @@ jobs:
               
       - run: pnpm install                    # 安装项目依赖
 
-      - run: pnpm run bp                     # 运行构建和发布脚本
+      - run: pnpm run bp --no-git-checks     # 运行构建和发布脚本
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}  # 使用 npm 令牌进行发布
