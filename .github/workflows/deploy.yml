@@ -1,0 +1,32 @@
+name: nicecode flow     # 脚本名称
+
+on:
+  push:
+    branches: ['main']      # 监听 main 分支的提交
+    tags: ['v*']            # 监听符合规则的标签 (以 'v' 开头的标签)
+
+permissions:                
+  contents: read            
+  pages: write
+  id-token: write
+
+jobs:
+  publish-npm:
+    runs-on: ubuntu-latest         # 运行服务器环境
+    steps:
+      - uses: actions/checkout@v4            # 检出代码仓库
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 20                  # Node.js 版本
+          registry-url: https://registry.npmjs.org
+
+      - name: Setup pnpm                     # 安装 pnpm 依赖
+        uses: pnpm/action-setup@v3
+        with:
+          version: 8
+          
+      - run: pnpm install                    # 安装项目依赖
+
+      - run: pnpm run bp                    # 执行打包发布脚本
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}  # 使用 npm 令牌进行发布
