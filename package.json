@@ -23,7 +23,7 @@
     "lint:fix": "eslint --fix",
     "test": "jest",
     "bp": "pnpm build && pnpm publish",
-    "publish:pre": "pnpm version prerelease && pnpm build && pnpm publish"
+    "pt":"git push origin main --follow-tags"
   },
   "devDependencies": {
     "@eslint/js": "^9.10.0",
