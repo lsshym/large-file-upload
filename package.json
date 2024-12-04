@@ -17,7 +17,8 @@
   },
   "scripts": {
     "dev": "vite",
-    "build": "vite build && start stats.html",
+    "build": "vite build",
+    "build:stats": "vite build && start stats.html",
     "lint": "eslint",
     "lint:fix": "eslint --fix",
     "test": "jest",
