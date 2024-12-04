@@ -2,7 +2,9 @@ name: nicecode flow     # 工作流名称
 
 on:
   push:
-    tags: ['v*']            # 仅监听以 'v' 开头的标签推送
+    branches: ['main']      # 监听 main 分支的推送
+    paths:
+      - 'package.json'      # 仅当 package.json 发生变化时触发
 
 permissions:
   contents: read
@@ -15,18 +17,26 @@ jobs:
     steps:
       - uses: actions/checkout@v4   # 检出代码仓库
         with:
-          fetch-depth: 0            # 获取所有分支和标签的完整历史记录
+          fetch-depth: 2            # 获取最近两个提交的历史记录
 
-      - name: 获取 main 分支的 SHA
-        id: main_sha
+      - name: 检查 package.json 的版本变化
+        id: check_version
         run: |
-          git fetch origin main
-          echo "main_sha=$(git rev-parse origin/main)" >> $GITHUB_OUTPUT
+          git diff HEAD~1 HEAD -- package.json > version.diff
+          if [ -s version.diff ]; then
+            old_version=$(git show HEAD~1:package.json | jq -r '.version')
+            new_version=$(cat package.json | jq -r '.version')
+            echo "old_version=$old_version" >> $GITHUB_OUTPUT
+            echo "new_version=$new_version" >> $GITHUB_OUTPUT
+          else
+            echo "package.json 未发生变化，退出。"
+            exit 1
+          fi
 
-      - name: 验证标签是否指向 main 分支
-        if: ${{ github.sha != steps.main_sha.outputs.main_sha }}
+      - name: 判断版本是否更新
+        if: ${{ steps.check_version.outputs.old_version == steps.check_version.outputs.new_version }}
         run: |
-          echo "该标签未指向 main 分支的最新提交。退出。"
+          echo "package.json 的 version 未发生变化，退出。"
           exit 1
 
       - uses: actions/setup-node@v3
