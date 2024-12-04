@@ -1,7 +1,7 @@
 {
   "name": "large-file-upload",
   "private": false,
-  "version": "4.0.4",
+  "version": "4.0.5",
   "description": "A library for handling file uploads with chunking, hashing, and concurrent upload management.",
   "type": "module",
   "files": [
@@ -23,7 +23,7 @@
     "lint:fix": "eslint --fix",
     "test": "jest",
     "bp": "pnpm build && pnpm publish",
-    "pt":"git push origin main --follow-tags"
+    "pt": "git push origin main --follow-tags"
   },
   "devDependencies": {
     "@eslint/js": "^9.10.0",
