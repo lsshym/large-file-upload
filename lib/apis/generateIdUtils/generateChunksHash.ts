@@ -16,14 +16,42 @@ export enum Md5ChunksChannelLabelsEnum {
  * @returns Promise<string[]> - A Promise that resolves to an array of hash values for each Blob.
  */
 export function generateChunksHash(blobArr: Blob[]): Promise<string[]> {
-  const workerCount = navigator?.hardwareConcurrency / 2 || 4;
-  const queue = new YoctoQueue();
+  if (blobArr.length === 0) {
+    return Promise.resolve([]);
+  }
+
+  const workerCount = getWorkerCount(blobArr.length);
+  const queue = new YoctoQueue<{ blob: Blob; index: number }>();
   const results: string[] = [];
   const workers: { worker: Worker; channel: MessageChannel }[] = [];
+  let completedCount = 0;
+  let settled = false;
   blobArr.forEach((blob, index) => {
     queue.enqueue({ blob, index });
   });
   return new Promise((resolve, reject) => {
+    const cleanup = () => {
+      workers.forEach(({ worker, channel }) => {
+        worker.terminate();
+        channel.port1.close();
+        channel.port2.close();
+      });
+    };
+
+    const resolveOnce = () => {
+      if (settled) return;
+      settled = true;
+      cleanup();
+      resolve(results);
+    };
+
+    const rejectOnce = (error: Error) => {
+      if (settled) return;
+      settled = true;
+      cleanup();
+      reject(error);
+    };
+
     for (let i = 0; i < workerCount; i++) {
       const worker = new Md5ChunksWorker();
       const channel = new MessageChannel();
@@ -42,13 +70,9 @@ export function generateChunksHash(blobArr: Blob[]): Promise<string[]> {
           case Md5ChunksChannelLabelsEnum.DONE:
             {
               results[index] = data;
-              if (results.length === blobArr.length) {
-                workers.forEach(({ worker, channel }) => {
-                  worker.terminate();
-                  channel.port1.close();
-                  channel.port2.close();
-                });
-                resolve(results);
+              completedCount++;
+              if (completedCount === blobArr.length) {
+                resolveOnce();
                 return;
               }
               const blob = queue.dequeue();
@@ -61,7 +85,7 @@ export function generateChunksHash(blobArr: Blob[]): Promise<string[]> {
 
             break;
           case Md5ChunksChannelLabelsEnum.ERROR:
-            reject(new Error(`Worker ${index} reported error: ${data}`));
+            rejectOnce(new Error(`Worker ${index} reported error: ${data}`));
             break;
           default:
         }
@@ -78,4 +102,15 @@ export function generateChunksHash(blobArr: Blob[]): Promise<string[]> {
       }
     }
   });
+}
+
+function getWorkerCount(chunkCount: number): number {
+  const hardwareConcurrency =
+    typeof navigator !== 'undefined' ? navigator.hardwareConcurrency : undefined;
+  const defaultWorkerCount =
+    typeof hardwareConcurrency === 'number' && hardwareConcurrency >= 2
+      ? Math.floor(hardwareConcurrency / 2)
+      : 4;
+
+  return Math.max(1, Math.min(chunkCount, defaultWorkerCount));
 }
