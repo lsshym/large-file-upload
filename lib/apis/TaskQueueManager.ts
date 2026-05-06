@@ -5,6 +5,7 @@ enum TaskState {
   RUNNING,
   PAUSED,
   COMPLETED,
+  CANCELED,
 }
 
 export type UploadHelperOptions = {
@@ -76,7 +77,7 @@ export class TaskQueueManager<T = any, R = any> {
     { task: Task<T>; controller: AbortController; idleCallbackId?: number }
   > = new Map();
   private taskExecutor!: AsyncFunction<T, R>;
-  private resolve!: (value: { results: (R | Error)[]; errorTasks: Task<T>[] }) => void;
+  private resolve?: (value: { results: (R | Error)[]; errorTasks: Task<T>[] }) => void;
   private maxRetries: number;
   private retryDelay: number;
   private runTaskMethod: (task: Task<T>) => Promise<void>;
@@ -90,7 +91,7 @@ export class TaskQueueManager<T = any, R = any> {
    */
   constructor(tasksData: T[], options: UploadHelperOptions = {}) {
     const {
-      maxConcurrentTasks = (navigator?.hardwareConcurrency / 2) | 4,
+      maxConcurrentTasks = getDefaultConcurrentTasks(),
       maxRetries = 3,
       retryDelay = 1000,
       lowPriority = false,
@@ -101,10 +102,10 @@ export class TaskQueueManager<T = any, R = any> {
     this.retryDelay = retryDelay;
     
     if (lowPriority) {
-      if ('requestIdleCallback' in window) {
+      if (typeof window !== 'undefined' && 'requestIdleCallback' in window) {
         this.runTaskMethod = this.runTaskWithIdleCallback;
       } else {
-        this.maxConcurrentTasks = this.maxConcurrentTasks / 2;
+        this.maxConcurrentTasks = Math.max(1, Math.floor(this.maxConcurrentTasks / 2));
         this.runTaskMethod = this.runTaskWithoutIdleCallback;
       }
     } else {
@@ -139,7 +140,7 @@ export class TaskQueueManager<T = any, R = any> {
 
     if (this.queue.size === 0 && this.activeCount === 0) {
       this.taskState = TaskState.COMPLETED;
-      this.resolve({ results: this.results, errorTasks: this.errorTasks });
+      this.finish();
       return;
     }
 
@@ -155,8 +156,6 @@ export class TaskQueueManager<T = any, R = any> {
     const result = await this.taskExecutor({ data: task?.data, signal: controller?.signal });
     this.results[task.index] = result;
     this.progressCallback(++this.progress);
-    this.activeCount--;
-    this.currentRunningTasksMap.delete(task.index);
   }
 
   private async handleRetries(task: Task<T>, retryFn: () => Promise<void>): Promise<void> {
@@ -173,9 +172,21 @@ export class TaskQueueManager<T = any, R = any> {
         } else {
           this.results[task.index] = error as Error;
           this.errorTasks.push(task);
+          return;
         }
       }
     }
+  }
+
+  private settleTask(task: Task<T>): void {
+    this.activeCount = Math.max(0, this.activeCount - 1);
+    this.currentRunningTasksMap.delete(task.index);
+  }
+
+  private finish(): void {
+    const resolve = this.resolve;
+    this.resolve = undefined;
+    resolve?.({ results: this.results, errorTasks: this.errorTasks });
   }
 
   // Method using requestIdleCallback
@@ -202,6 +213,7 @@ export class TaskQueueManager<T = any, R = any> {
           this.currentRunningTasksMap.get(task.index)!.idleCallbackId = idleCallbackId;
         }),
     );
+    this.settleTask(task);
   }
 
   private async runTaskWithoutIdleCallback(task: Task<T>): Promise<void> {
@@ -210,6 +222,7 @@ export class TaskQueueManager<T = any, R = any> {
     this.activeCount++;
 
     await this.handleRetries(task, () => this.executeTask(task, controller));
+    this.settleTask(task);
   }
 
   /**
@@ -254,7 +267,7 @@ export class TaskQueueManager<T = any, R = any> {
    * Clear the task queue and stop all running tasks.
    */
   clear(): void {
-    this.taskState = TaskState.COMPLETED;
+    this.taskState = TaskState.CANCELED;
     this.activeCount = 0;
     this.currentRunningTasksMap.forEach(({ controller, idleCallbackId }) => {
       controller.abort();
@@ -262,6 +275,7 @@ export class TaskQueueManager<T = any, R = any> {
     });
     this.queue.clear();
     this.currentRunningTasksMap.clear();
+    this.finish();
   }
 
   /**
@@ -271,4 +285,15 @@ export class TaskQueueManager<T = any, R = any> {
   onProgressChange(callback: (index: number) => void): void {
     this.progressCallback = callback;
   }
+}
+
+function getDefaultConcurrentTasks(): number {
+  const hardwareConcurrency =
+    typeof navigator !== 'undefined' ? navigator.hardwareConcurrency : undefined;
+
+  if (typeof hardwareConcurrency !== 'number' || hardwareConcurrency < 2) {
+    return 4;
+  }
+
+  return Math.max(1, Math.floor(hardwareConcurrency / 2));
 }

@@ -10,7 +10,6 @@
   - [Using with Vite](#using-with-vite)
   - [API Reference](#api-reference)
     - [`createFileChunks`](#createfilechunks)
-    - [`generateUUID`](#generateuuid)
     - [`generateFileMd5`](#generatefilemd5)
     - [`generateFileFingerprint`](#generatefilefingerprint)
     - [`TaskQueueManager`](#taskqueuemanager)
@@ -57,18 +56,6 @@ Splits the given file into multiple chunks of the specified size.
 **Returns**:
 
 - `Promise<FileChunkResult>` - An object containing the file chunks and chunk size.
-
-### `generateUUID`
-
-Generates a UUID (Universally Unique Identifier).
-
-**Parameters**:
-
- - `any` args - The input parameters used to generate the UUID.
- 
-**Returns**:
-
-- `string` A UUID string generated from the input.
 
 ### `generateFileMd5`
 
@@ -179,7 +166,7 @@ import { TaskQueueManager, createFileChunks } from 'large-file-upload';
 
 async function uploadFile(file: File) {
   const { fileChunks } = await createFileChunks(file);
-  const uuid = await generateUUID(file.size, file.name);
+  const uploadId = crypto.randomUUID();
 
   const fileArr = fileChunks.map((chunk, index) => {
     return {
@@ -200,7 +187,7 @@ async function uploadFile(file: File) {
     const formData = new FormData();
     formData.append('chunk', data.blob);
     formData.append('index', data.index);
-    formData.append('uploadId', uuid);
+    formData.append('uploadId', uploadId);
     // Simulate an upload request using fetch or any HTTP client
     const response = await fetch('/upload', {
       method: 'POST',
