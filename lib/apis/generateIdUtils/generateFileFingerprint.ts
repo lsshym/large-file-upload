@@ -25,11 +25,29 @@ const maxSampleCount = 100;
 export function generateFileFingerprint(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
     const { fileChunks }: FileChunkResult = createFileChunks(file);
-    const workerCount = navigator?.hardwareConcurrency / 2 || 4;
+    const workerCount = getWorkerCount(fileChunks.length);
     const fileChunkSize = Math.ceil(fileChunks.length / workerCount);
     const workers: Worker[] = [];
     const partialHashes: string[] = [];
     let completedWorkers = 0;
+    let settled = false;
+
+    const terminateWorkers = () => {
+      workers.forEach(worker => worker.terminate());
+    };
+
+    const rejectOnce = (error: Error) => {
+      if (settled) return;
+      settled = true;
+      terminateWorkers();
+      reject(error);
+    };
+
+    const resolveOnce = (hash: string) => {
+      if (settled) return;
+      settled = true;
+      resolve(hash);
+    };
 
     try {
       for (let i = 0; i < workerCount; i++) {
@@ -45,7 +63,7 @@ export function generateFileFingerprint(file: File): Promise<string> {
               if (completedWorkers === workerCount) {
                 hashConcat(partialHashes)
                   .then(finalHash => {
-                    resolve(finalHash);
+                    resolveOnce(finalHash);
                   })
                   .catch(error => {
                     let errorMessage = 'Unknown error';
@@ -54,20 +72,18 @@ export function generateFileFingerprint(file: File): Promise<string> {
                     } else {
                       errorMessage = String(error);
                     }
-                    reject(new Error(`Failed to concatenate hashes: ${errorMessage}`));
+                    rejectOnce(new Error(`Failed to concatenate hashes: ${errorMessage}`));
                   });
               }
               worker.terminate();
               break;
 
             case Md5FileWorkerLabelsEnum.ERROR:
-              reject(new Error(`Worker ${index} reported error: ${data}`));
-              worker.terminate();
+              rejectOnce(new Error(`Worker ${index} reported error: ${data}`));
               break;
 
             default:
-              reject(new Error(`Unexpected message label received from worker ${index}: ${label}`));
-              worker.terminate();
+              rejectOnce(new Error(`Unexpected message label received from worker ${index}: ${label}`));
               break;
           }
         };
@@ -79,8 +95,7 @@ export function generateFileFingerprint(file: File): Promise<string> {
           } else {
             errorMessage = JSON.stringify(event);
           }
-          reject(new Error(`Worker error: ${errorMessage}`));
-          workers.forEach(w => w.terminate()); // 终止所有 Worker
+          rejectOnce(new Error(`Worker error: ${errorMessage}`));
         };
 
         const start = i * fileChunkSize;
@@ -104,7 +119,7 @@ export function generateFileFingerprint(file: File): Promise<string> {
             } else {
               errorMessage = String(error);
             }
-            reject(new Error(`Failed to read file chunks: ${errorMessage}`));
+            rejectOnce(new Error(`Failed to read file chunks: ${errorMessage}`));
           });
       }
     } catch (error) {
@@ -114,9 +129,20 @@ export function generateFileFingerprint(file: File): Promise<string> {
       } else {
         errorMessage = String(error);
       }
-      reject(new Error(`Failed to generate file hash with array buffer: ${errorMessage}`));
+      rejectOnce(new Error(`Failed to generate file hash with array buffer: ${errorMessage}`));
     }
   });
+}
+
+function getWorkerCount(chunkCount: number): number {
+  const hardwareConcurrency =
+    typeof navigator !== 'undefined' ? navigator.hardwareConcurrency : undefined;
+  const defaultWorkerCount =
+    typeof hardwareConcurrency === 'number' && hardwareConcurrency >= 2
+      ? Math.floor(hardwareConcurrency / 2)
+      : 4;
+
+  return Math.max(1, Math.min(chunkCount, defaultWorkerCount));
 }
 
 async function hashConcat(hashes: string[]): Promise<string> {
