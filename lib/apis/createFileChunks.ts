@@ -27,7 +27,11 @@ export function createFileChunks(file: File, customChunkSize?: number): FileChun
   const size = file.size;
   let chunkSize: number;
 
-  if (typeof customChunkSize === 'number' && customChunkSize >= 1) {
+  if (
+    typeof customChunkSize === 'number' &&
+    Number.isFinite(customChunkSize) &&
+    customChunkSize >= 1
+  ) {
     chunkSize = Math.floor(customChunkSize) * BASESIZE;
   } else if (customChunkSize !== undefined) {
     chunkSize = 4 * BASESIZE;

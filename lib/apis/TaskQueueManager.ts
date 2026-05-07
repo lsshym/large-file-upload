@@ -96,9 +96,9 @@ export class TaskQueueManager<T = any, R = any> {
       lowPriority = false,
     } = options;
 
-    this.maxConcurrentTasks = maxConcurrentTasks;
-    this.maxRetries = maxRetries;
-    this.retryDelay = retryDelay;
+    this.maxConcurrentTasks = normalizePositiveInteger(maxConcurrentTasks, getDefaultConcurrentTasks());
+    this.maxRetries = normalizeNonNegativeInteger(maxRetries, 3);
+    this.retryDelay = normalizeNonNegativeInteger(retryDelay, 1000);
     
     if (lowPriority) {
       if (typeof window !== 'undefined' && 'requestIdleCallback' in window) {
@@ -160,15 +160,15 @@ export class TaskQueueManager<T = any, R = any> {
   }
 
   private async handleRetries(task: Task<T>, retryFn: () => Promise<void>): Promise<void> {
-    let retries = this.maxRetries;
-    while (retries >= 0) {
+    let retriesLeft = this.maxRetries;
+    while (true) {
       try {
         await retryFn();
         break;
       } catch (error) {
-        retries--;
         if (this.taskState !== TaskState.RUNNING) return;
-        if (retries > 0) {
+        if (retriesLeft > 0) {
+          retriesLeft--;
           await new Promise(resolve => setTimeout(resolve, this.retryDelay));
         } else {
           this.results[task.index] = error as Error;
@@ -179,7 +179,10 @@ export class TaskQueueManager<T = any, R = any> {
     }
   }
 
-  private settleTask(task: Task<T>): void {
+  private settleTask(task: Task<T>, controller: AbortController): void {
+    const currentTask = this.currentRunningTasksMap.get(task.index);
+    if (!currentTask || currentTask.controller !== controller) return;
+
     this.activeCount = Math.max(0, this.activeCount - 1);
     this.currentRunningTasksMap.delete(task.index);
   }
@@ -212,9 +215,9 @@ export class TaskQueueManager<T = any, R = any> {
             { timeout: 2000 },
           );
           this.currentRunningTasksMap.get(task.index)!.idleCallbackId = idleCallbackId;
-        }),
+      }),
     );
-    this.settleTask(task);
+    this.settleTask(task, controller);
   }
 
   private async runTaskWithoutIdleCallback(task: Task<T>): Promise<void> {
@@ -223,7 +226,7 @@ export class TaskQueueManager<T = any, R = any> {
     this.activeCount++;
 
     await this.handleRetries(task, () => this.executeTask(task, controller));
-    this.settleTask(task);
+    this.settleTask(task, controller);
   }
 
   /**
@@ -291,6 +294,22 @@ export class TaskQueueManager<T = any, R = any> {
   onProgressChange(callback: (index: number) => void): void {
     this.progressCallback = callback;
   }
+}
+
+function normalizePositiveInteger(value: number, fallback: number): number {
+  if (Number.isFinite(value) && value >= 1) {
+    return Math.floor(value);
+  }
+
+  return fallback;
+}
+
+function normalizeNonNegativeInteger(value: number, fallback: number): number {
+  if (Number.isFinite(value) && value >= 0) {
+    return Math.floor(value);
+  }
+
+  return fallback;
 }
 
 function getDefaultConcurrentTasks(): number {

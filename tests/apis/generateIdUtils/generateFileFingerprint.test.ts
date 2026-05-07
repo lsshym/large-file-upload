@@ -1,6 +1,35 @@
 import { webcrypto } from 'node:crypto';
 import { generateFileFingerprint } from '../../../lib/apis/generateIdUtils/generateFileFingerprint';
 
+type WorkerMockAction = {
+  label?: string;
+  data?: string;
+  delay?: number;
+  onerror?: unknown;
+};
+
+type FileFingerprintWorkerMockState = {
+  instances: Array<{ terminated: boolean }>;
+  fileMessages: Array<{
+    message: {
+      data: ArrayBuffer[];
+      index: number;
+    };
+    transfer?: ArrayBuffer[];
+  }>;
+  terminatedCount: number;
+};
+
+type FileFingerprintWorkerMockGlobal = typeof globalThis & {
+  __workerMockConfig?: {
+    file?: Record<number, WorkerMockAction>;
+    fileDelays?: Record<number, number>;
+  };
+  __workerMockState?: FileFingerprintWorkerMockState;
+};
+
+const workerMockGlobal = globalThis as FileFingerprintWorkerMockGlobal;
+
 function withTimeout<T>(promise: Promise<T>, timeout = 50): Promise<T | 'timeout'> {
   return Promise.race([
     promise,
@@ -14,6 +43,11 @@ describe('generateFileFingerprint', () => {
   const originalNavigator = Object.getOwnPropertyDescriptor(globalThis, 'navigator');
   const originalCrypto = Object.getOwnPropertyDescriptor(globalThis, 'crypto');
 
+  beforeEach(() => {
+    workerMockGlobal.__workerMockConfig = undefined;
+    workerMockGlobal.__workerMockState = undefined;
+  });
+
   afterEach(() => {
     if (originalNavigator) {
       Object.defineProperty(globalThis, 'navigator', originalNavigator);
@@ -26,6 +60,9 @@ describe('generateFileFingerprint', () => {
     } else {
       delete (globalThis as { crypto?: Crypto }).crypto;
     }
+
+    workerMockGlobal.__workerMockConfig = undefined;
+    workerMockGlobal.__workerMockState = undefined;
   });
 
   it('settles when hardwareConcurrency is odd', async () => {
@@ -45,5 +82,136 @@ describe('generateFileFingerprint', () => {
     if (result === 'timeout') return;
 
     expect(result).toMatch(/^[a-f0-9]{32}$/);
+  });
+
+  it('uses a deterministic subset of chunks for large files', async () => {
+    Object.defineProperty(globalThis, 'navigator', {
+      configurable: true,
+      value: { hardwareConcurrency: 2 },
+    });
+    Object.defineProperty(globalThis, 'crypto', {
+      configurable: true,
+      value: webcrypto,
+    });
+
+    await generateFileFingerprint(new File([new Uint8Array(120 * 1024 * 1024)], 'large.bin'));
+
+    expect(workerMockGlobal.__workerMockState?.instances).toHaveLength(1);
+    expect(workerMockGlobal.__workerMockState?.fileMessages).toHaveLength(1);
+    expect(workerMockGlobal.__workerMockState?.fileMessages[0].message.data).toHaveLength(5);
+    expect(workerMockGlobal.__workerMockState?.fileMessages[0].transfer).toHaveLength(5);
+  });
+
+  it('spreads chunks across the computed worker count', async () => {
+    Object.defineProperty(globalThis, 'navigator', {
+      configurable: true,
+      value: { hardwareConcurrency: 4 },
+    });
+    Object.defineProperty(globalThis, 'crypto', {
+      configurable: true,
+      value: webcrypto,
+    });
+
+    await generateFileFingerprint(new File([new Uint8Array(3 * 1024 * 1024)], 'three-mb.bin'));
+
+    expect(workerMockGlobal.__workerMockState?.instances).toHaveLength(2);
+    expect(workerMockGlobal.__workerMockState?.fileMessages.map(({ message }) => message.index)).toEqual([
+      0, 1,
+    ]);
+    expect(workerMockGlobal.__workerMockState?.fileMessages.map(({ message }) => message.data.length)).toEqual([
+      2, 1,
+    ]);
+  });
+
+  it('rejects and terminates workers when a worker reports an error', async () => {
+    Object.defineProperty(globalThis, 'navigator', {
+      configurable: true,
+      value: { hardwareConcurrency: 4 },
+    });
+    Object.defineProperty(globalThis, 'crypto', {
+      configurable: true,
+      value: webcrypto,
+    });
+    workerMockGlobal.__workerMockConfig = {
+      file: {
+        1: {
+          label: 'ERROR',
+          data: 'partial md5 failed',
+        },
+      },
+    };
+
+    await expect(
+      generateFileFingerprint(new File([new Uint8Array(3 * 1024 * 1024)], 'three-mb.bin')),
+    ).rejects.toThrow('Worker 1 reported error: partial md5 failed');
+    expect(workerMockGlobal.__workerMockState?.terminatedCount).toBeGreaterThanOrEqual(2);
+  });
+
+  it('rejects unexpected worker labels', async () => {
+    Object.defineProperty(globalThis, 'crypto', {
+      configurable: true,
+      value: webcrypto,
+    });
+    workerMockGlobal.__workerMockConfig = {
+      file: {
+        0: {
+          label: 'MYSTERY',
+        },
+      },
+    };
+
+    await expect(generateFileFingerprint(new File(['hello'], 'hello.txt'))).rejects.toThrow(
+      'Unexpected message label received from worker 0: MYSTERY',
+    );
+  });
+
+  it('rejects when a worker emits an error event', async () => {
+    Object.defineProperty(globalThis, 'crypto', {
+      configurable: true,
+      value: webcrypto,
+    });
+    workerMockGlobal.__workerMockConfig = {
+      file: {
+        0: {
+          onerror: { message: 'boom' },
+        },
+      },
+    };
+
+    await expect(generateFileFingerprint(new File(['hello'], 'hello.txt'))).rejects.toThrow(
+      'Worker error',
+    );
+  });
+
+  it('rejects when a sampled chunk cannot be read', async () => {
+    const badBlob = {
+      size: 1,
+      arrayBuffer: async () => {
+        throw new Error('cannot read chunk');
+      },
+    } as Blob;
+    const file = {
+      size: 1,
+      slice: () => badBlob,
+    } as File;
+
+    await expect(generateFileFingerprint(file)).rejects.toThrow('Failed to read file chunks');
+  });
+
+  it('rejects when crypto digest fails while concatenating partial hashes', async () => {
+    Object.defineProperty(globalThis, 'crypto', {
+      configurable: true,
+      value: {
+        subtle: {
+          digest: async () => {
+            throw new Error('digest failed');
+          },
+        },
+      },
+    });
+
+    await expect(generateFileFingerprint(new File(['hello'], 'hello.txt'))).rejects.toThrow(
+      'Failed to concatenate hashes',
+    );
   });
 });

@@ -90,7 +90,7 @@ export function generateFileFingerprint(file: File): Promise<string> {
 
         worker.onerror = event => {
           let errorMessage = 'Unknown worker error';
-          if (event instanceof ErrorEvent) {
+          if (typeof ErrorEvent !== 'undefined' && event instanceof ErrorEvent) {
             errorMessage = `Message: ${event.message}\nFilename: ${event.filename}\nLine: ${event.lineno}\nColumn: ${event.colno}\nError: ${event.error}`;
           } else {
             errorMessage = JSON.stringify(event);
