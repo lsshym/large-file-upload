@@ -8,19 +8,18 @@ self.addEventListener('message', async (event: MessageEvent) => {
   try {
     switch (label) {
       case Md5FileWorkerLabelsEnum.DOING: {
-        const md5 = await createMD5();
-        md5.init();
+        const chunkHashes = await Promise.all(
+          data.map(async buffer => {
+            const md5 = await createMD5();
+            md5.init();
+            md5.update(new Uint8Array(buffer));
+            return md5.digest('hex');
+          }),
+        );
 
-        // 对每个 ArrayBuffer 进行增量哈希更新
-        data.forEach(buffer => {
-          md5.update(new Uint8Array(buffer));
-        });
-
-        // 生成增量 MD5 的中间状态并传回主线程
-        const partialHashState = md5.digest('binary'); // 返回 MD5 结果
         postMessage({
           label: Md5FileWorkerLabelsEnum.DONE,
-          data: partialHashState, // 发送 MD5 结果
+          data: chunkHashes,
           index,
         });
         break;

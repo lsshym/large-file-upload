@@ -25,10 +25,11 @@ const maxSampleCount = 100;
 export function generateFileFingerprint(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
     const { fileChunks }: FileChunkResult = createFileChunks(file);
-    const workerCount = getWorkerCount(fileChunks.length);
-    const fileChunkSize = Math.ceil(fileChunks.length / workerCount);
+    const sampledChunks = deterministicSampling(fileChunks, maxSampleCount, 5, 0.1);
+    const workerCount = getWorkerCount(sampledChunks.length);
+    const workerChunkSize = Math.ceil(sampledChunks.length / workerCount);
     const workers: Worker[] = [];
-    const partialHashes: string[] = [];
+    const chunkHashGroups: string[][] = [];
     let completedWorkers = 0;
     let settled = false;
 
@@ -58,10 +59,10 @@ export function generateFileFingerprint(file: File): Promise<string> {
 
           switch (label) {
             case Md5FileWorkerLabelsEnum.DONE:
-              partialHashes[index] = data;
+              chunkHashGroups[index] = data;
               completedWorkers++;
               if (completedWorkers === workerCount) {
-                hashConcat(partialHashes)
+                hashConcat(chunkHashGroups.flat())
                   .then(finalHash => {
                     resolveOnce(finalHash);
                   })
@@ -98,10 +99,9 @@ export function generateFileFingerprint(file: File): Promise<string> {
           rejectOnce(new Error(`Worker error: ${errorMessage}`));
         };
 
-        const start = i * fileChunkSize;
-        const blobChunk = fileChunks.slice(start, start + fileChunkSize);
-        const sampledChunks = deterministicSampling(blobChunk, maxSampleCount, 5, 0.1);
-        Promise.all(sampledChunks.map(blob => blob.arrayBuffer()))
+        const start = i * workerChunkSize;
+        const workerChunks = sampledChunks.slice(start, start + workerChunkSize);
+        Promise.all(workerChunks.map(blob => blob.arrayBuffer()))
           .then(arrayBuffers => {
             worker.postMessage(
               {

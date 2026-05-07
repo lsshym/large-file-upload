@@ -65,6 +65,38 @@ describe('generateFileFingerprint', () => {
     workerMockGlobal.__workerMockState = undefined;
   });
 
+  it('generates the same fingerprint regardless of worker count', async () => {
+    Object.defineProperty(globalThis, 'crypto', {
+      configurable: true,
+      value: webcrypto,
+    });
+    const file = new File([new Uint8Array(3 * 1024 * 1024)], 'three-mb.bin');
+
+    Object.defineProperty(globalThis, 'navigator', {
+      configurable: true,
+      value: { hardwareConcurrency: 2 },
+    });
+    const oneWorkerResult = await generateFileFingerprint(file);
+    const oneWorkerMessages = [...(workerMockGlobal.__workerMockState?.fileMessages || [])]
+      .sort((left, right) => left.message.index - right.message.index)
+      .map(({ message }) => message.data.length);
+
+    workerMockGlobal.__workerMockConfig = undefined;
+    workerMockGlobal.__workerMockState = undefined;
+    Object.defineProperty(globalThis, 'navigator', {
+      configurable: true,
+      value: { hardwareConcurrency: 8 },
+    });
+    const fourWorkerResult = await generateFileFingerprint(file);
+    const fourWorkerMessages = [...(workerMockGlobal.__workerMockState?.fileMessages || [])]
+      .sort((left, right) => left.message.index - right.message.index)
+      .map(({ message }) => message.data.length);
+
+    expect(oneWorkerMessages).toEqual([3]);
+    expect(fourWorkerMessages).toEqual([1, 1, 1]);
+    expect(fourWorkerResult).toBe(oneWorkerResult);
+  });
+
   it('settles when hardwareConcurrency is odd', async () => {
     Object.defineProperty(globalThis, 'navigator', {
       configurable: true,
@@ -84,22 +116,24 @@ describe('generateFileFingerprint', () => {
     expect(result).toMatch(/^[a-f0-9]{32}$/);
   });
 
-  it('uses a deterministic subset of chunks for large files', async () => {
+  it('does not start extra fingerprint workers for empty work groups', async () => {
     Object.defineProperty(globalThis, 'navigator', {
       configurable: true,
-      value: { hardwareConcurrency: 2 },
+      value: { hardwareConcurrency: 8 },
     });
     Object.defineProperty(globalThis, 'crypto', {
       configurable: true,
       value: webcrypto,
     });
 
-    await generateFileFingerprint(new File([new Uint8Array(120 * 1024 * 1024)], 'large.bin'));
+    await generateFileFingerprint(new File(['hello'], 'hello.txt'));
 
     expect(workerMockGlobal.__workerMockState?.instances).toHaveLength(1);
-    expect(workerMockGlobal.__workerMockState?.fileMessages).toHaveLength(1);
-    expect(workerMockGlobal.__workerMockState?.fileMessages[0].message.data).toHaveLength(5);
-    expect(workerMockGlobal.__workerMockState?.fileMessages[0].transfer).toHaveLength(5);
+    const messagesByIndex = [...(workerMockGlobal.__workerMockState?.fileMessages || [])].sort(
+      (left, right) => left.message.index - right.message.index,
+    );
+    expect(messagesByIndex.map(({ message }) => message.index)).toEqual([0]);
+    expect(messagesByIndex.map(({ message }) => message.data.length)).toEqual([1]);
   });
 
   it('spreads chunks across the computed worker count', async () => {

@@ -32,6 +32,16 @@ function getDelay(kind, index, fallback) {
   return fallback;
 }
 
+function hashBuffer(buffer) {
+  const bytes = new Uint8Array(buffer);
+  let hash = 0;
+  for (let index = 0; index < bytes.length; index++) {
+    hash = (hash * 31 + bytes[index]) >>> 0;
+  }
+
+  return hash.toString(16).padStart(8, '0');
+}
+
 class WorkerMock {
   constructor() {
     this.terminated = false;
@@ -74,7 +84,7 @@ class WorkerMock {
       this.onmessage?.({
         data: {
           label: action.label || 'DONE',
-          data: action.data || `hash-${message.index}`,
+          data: action.data || message.data.map(buffer => hashBuffer(buffer)),
           index: message.index,
         },
       });
