@@ -1,4 +1,4 @@
-import { generateChunksHash } from './generateChunksHash';
+import { generateChunksHash } from '../../../lib/apis/generateIdUtils/generateChunksHash';
 
 function withTimeout<T>(promise: Promise<T>, timeout = 50): Promise<T | 'timeout'> {
   return Promise.race([

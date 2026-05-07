@@ -55,7 +55,7 @@ Splits the given file into multiple chunks of the specified size.
 
 **Returns**:
 
-- `Promise<FileChunkResult>` - An object containing the file chunks and chunk size.
+- `FileChunkResult` - An object containing the file chunks and chunk size in MB.
 
 ### `generateFileMd5`
 
@@ -72,7 +72,7 @@ Generates the MD5 hash
 
 ### `generateFileFingerprint`
 
-Calculates the hash of the given file in chunks.
+Generates a fast deterministic fingerprint for the given file by sampling chunks. This is useful for quick file identification, but it is not a full-file integrity hash. Use `generateFileMd5` when a complete MD5 is required.
 
 **Parameters**:
 
@@ -80,7 +80,7 @@ Calculates the hash of the given file in chunks.
 
 **Returns**:
 
-- `Promise<string>` - A promise that resolves to an object containing the hash and chunk size.
+- `Promise<string>` - A promise that resolves to the generated file fingerprint.
 
 ### `TaskQueueManager`
 
@@ -90,7 +90,7 @@ A utility class to manage and control the upload of file chunks with support for
 
 - `tasksData: T[]` - An array of task data (e.g., file chunks) to be uploaded.
 - `options?: UploadHelperOptions` - Optional settings for controlling the upload:
-  - `maxConcurrentTasks?: number` - Maximum number of concurrent uploads (default: 5).
+  - `maxConcurrentTasks?: number` - Maximum number of concurrent uploads. Defaults to half of `navigator.hardwareConcurrency`, falling back to 4.
   - `lowPriority?: boolean` - **Whether to use low priority mode to improve main thread performance (default: false)**.
   - `maxRetries?: number` - Maximum number of retries for a failed task (default: 3).
   - `retryDelay?: number` - Delay between retries in milliseconds (default: 1000 ms).
@@ -99,13 +99,13 @@ A utility class to manage and control the upload of file chunks with support for
 
 - `run(func: AsyncFunction<T, R>): Promise<{ results: (R | Error)[]; errorTasks: Task<T>[] }>`: Executes the upload tasks in the queue with the provided async function for processing each chunk.
 
-- `pause(): void`: Pauses the ongoing uploads. Ongoing tasks are aborted, and pending tasks remain in the queue.
+- `pause(): void`: Pauses the ongoing uploads. Ongoing tasks are aborted and re-queued, and late results from aborted tasks are ignored.
 
 - `resume(): void`: Resumes paused uploads from where they left off.
 
-- `retryTasks(tasks: Task<T>[]): Promise<{ results: (R | Error)[]; errorTasks: Task<T>[] }>`: Retries the specified tasks.
+- `retryTasks(tasks: Task<T>[]): Promise<{ results: (R | Error)[]; errorTasks: Task<T>[] }>`: Retries the specified failed tasks and clears their previous error results before re-running them.
 
-- `clear(): void`: Cancels all ongoing and pending uploads and clears the task queue.
+- `clear(): void`: Cancels all ongoing and pending uploads, clears the task queue, and settles the current `run()` promise.
 
 - `onProgressChange(callback: (index: number) => void): void`: Sets a callback function to monitor the progress of the tasks.
 
@@ -139,7 +139,7 @@ This example demonstrates how to use the `createFileChunks` function to split a 
 import { createFileChunks } from 'large-file-upload';
 
 async function splitFile(file: File) {
-  const { fileChunks, chunkSize } = await createFileChunks(file);
+  const { fileChunks, chunkSize } = createFileChunks(file);
   console.log('File has been split into', fileChunks.length, 'chunks of size', chunkSize);
 }
 ````
@@ -165,7 +165,7 @@ This example demonstrates how to use `TaskQueueManager` to upload file chunks wi
 import { TaskQueueManager, createFileChunks } from 'large-file-upload';
 
 async function uploadFile(file: File) {
-  const { fileChunks } = await createFileChunks(file);
+  const { fileChunks } = createFileChunks(file);
   const uploadId = crypto.randomUUID();
 
   const fileArr = fileChunks.map((chunk, index) => {

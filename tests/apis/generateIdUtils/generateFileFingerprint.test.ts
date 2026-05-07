@@ -1,5 +1,5 @@
 import { webcrypto } from 'node:crypto';
-import { generateFileFingerprint } from './generateFileFingerprint';
+import { generateFileFingerprint } from '../../../lib/apis/generateIdUtils/generateFileFingerprint';
 
 function withTimeout<T>(promise: Promise<T>, timeout = 50): Promise<T | 'timeout'> {
   return Promise.race([

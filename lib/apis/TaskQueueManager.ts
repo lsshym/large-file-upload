@@ -20,7 +20,6 @@ export type Task<T> = {
   index: number;
 };
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type AsyncFunction<T = any, R = any> = (props: {
   data: T;
   signal: AbortSignal;
@@ -154,6 +153,8 @@ export class TaskQueueManager<T = any, R = any> {
 
   private async executeTask(task: Task<T>, controller: AbortController): Promise<void> {
     const result = await this.taskExecutor({ data: task?.data, signal: controller?.signal });
+    if (controller.signal.aborted || this.taskState !== TaskState.RUNNING) return;
+
     this.results[task.index] = result;
     this.progressCallback(++this.progress);
   }
@@ -255,6 +256,11 @@ export class TaskQueueManager<T = any, R = any> {
    * @returns A promise containing the results and error tasks.
    */
   retryTasks(tasks: Task<T>[]): Promise<{ results: (R | Error)[]; errorTasks: Task<T>[] }> {
+    const retryTaskIndexes = new Set(tasks.map(task => task.index));
+    this.errorTasks = this.errorTasks.filter(task => !retryTaskIndexes.has(task.index));
+    retryTaskIndexes.forEach(index => {
+      delete this.results[index];
+    });
     tasks.forEach(task => this.queue.enqueue(task));
     this.taskState = TaskState.RUNNING;
     return new Promise(resolve => {

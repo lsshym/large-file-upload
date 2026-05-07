@@ -2,14 +2,17 @@
 export default {
   testEnvironment: 'node',
   transform: {
-    '^.+.tsx?$': ['ts-jest', {}],
+    '^.+.tsx?$': [
+      'ts-jest',
+      {
+        tsconfig: {
+          esModuleInterop: true,
+        },
+        isolatedModules: true,
+      },
+    ],
   },
-  globals: {
-    'ts-jest': {
-      isolatedModules: true,
-    },
-  },
-  testMatch: ['**/*.test.ts'],
+  testMatch: ['<rootDir>/tests/**/*.test.ts'],
   moduleNameMapper: {
     '^yocto-queue$': '<rootDir>/__mocks__/yoctoQueueMock.cjs',
     '\\.ts\\?worker$': '<rootDir>/__mocks__/workerMock.cjs',

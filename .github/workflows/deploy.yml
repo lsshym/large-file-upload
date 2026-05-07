@@ -58,7 +58,12 @@ jobs:
       # 安装项目依赖
       - run: pnpm install
 
-      # 运行构建和发布脚本，禁用 Git 检查
+      # 发布前验证
+      - run: pnpm test -- --runInBand
+
+      - run: pnpm build
+
+      # 运行发布脚本，禁用 Git 检查
       - run: pnpm run bp --no-git-checks
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}  # 使用 npm 令牌进行发布

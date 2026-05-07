@@ -1,4 +1,4 @@
-import { TaskQueueManager } from './TaskQueueManager';
+import { TaskQueueManager } from '../../lib/apis/TaskQueueManager';
 
 function withTimeout<T>(promise: Promise<T>, timeout = 50): Promise<T | 'timeout'> {
   return Promise.race([
@@ -55,5 +55,51 @@ describe('TaskQueueManager', () => {
 
     expect(result.errorTasks).toEqual([]);
     expect(result.results).toEqual([]);
+  });
+
+  it('ignores results from tasks that finish after pause', async () => {
+    const manager = new TaskQueueManager(['chunk-a'], {
+      maxConcurrentTasks: 1,
+      retryDelay: 0,
+    });
+
+    const progressCallback = jest.fn();
+    manager.onProgressChange(progressCallback);
+    manager.run(
+      () =>
+        new Promise<string>(resolve => {
+          setTimeout(() => resolve('late result'), 0);
+        }),
+    );
+
+    manager.pause();
+    await new Promise(resolve => setTimeout(resolve, 10));
+    expect(progressCallback).not.toHaveBeenCalled();
+  });
+
+  it('clears old errors when failed tasks are retried successfully', async () => {
+    const manager = new TaskQueueManager(['chunk-a'], {
+      maxConcurrentTasks: 1,
+      maxRetries: 0,
+      retryDelay: 0,
+    });
+
+    let attempts = 0;
+    const failedRun = await manager.run(async () => {
+      attempts++;
+      if (attempts === 1) {
+        throw new Error('upload failed');
+      }
+
+      return 'uploaded';
+    });
+
+    expect(failedRun.errorTasks).toHaveLength(1);
+
+    const retryRun = await manager.retryTasks(failedRun.errorTasks);
+
+    expect(retryRun.errorTasks).toEqual([]);
+    expect(retryRun.results[0]).toBe('uploaded');
+    expect(attempts).toBe(2);
   });
 });
